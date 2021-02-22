@@ -54,7 +54,7 @@ rule cellranger_atac_aggr:
         cellranger-atac aggr --id={params.id} --csv={input.aggr_csv} --reference={input.ref_genome} --normalize=depth --nosecondary 
         """
 
-rule prepro_seurat:
+rule preprocess_seurat: 
     input: 
         {'_'.join(samples)}
     output: 
@@ -63,8 +63,8 @@ rule prepro_seurat:
         """
         module load bioinfo-tools
         module load R/4.0.0 
-        module load R_packages/4.0.0 
+        module load R_packages/4.0.0        
 
-        Rscript --vanilla atac_preproc_seurat.R {input} {output}
+        Rscript --vanilla atac_preproc_seurat.R $(realpath {input}) {output}
         """
 
