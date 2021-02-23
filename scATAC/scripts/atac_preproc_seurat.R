@@ -1,10 +1,7 @@
 
-# Script to preform aditional preprocessing and filtering 
-# on output from cellranger-atac count and aggr. 
-# 1. Calculate QC 
-# 2. Filter on QC 
-# 3. Normalize 
-# 4. Dim redction 
+# Script to preform aditional preprocessing on output from cellranger-atac count and aggr. 
+# Calculate QC and gene activity 
+# Saves seurat object as RDS file  
 
 #------------------------------------
 #Install bioconductor
@@ -77,7 +74,7 @@ Annotation(data) <- annotations
 
 print("ANNOTATION OK")
 
-#--- QC ----------------------------
+#--- CALCULATE QC ----------------------------
 #1. Nucleosome banding pattern
 #2. Transcriptional start site (TSS) enrichment score 
 #3. Total number of fragments in peaks
@@ -98,62 +95,12 @@ data$blacklist_ratio <- data$blacklist_region_fragments / data$peak_region_fragm
 
 print("QC OK")
 
-#--- PLOT QC -----------------------
+#--- CALCULATE GENE ACTIVITY -------
 
-v_plot = VlnPlot(
-  object = data,
-  features = c('pct_reads_in_peaks', 'peak_region_fragments',
-               'TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
-  pt.size = 0.1,
-  ncol = 5,
-  cols = "orange"
-)
+gene.activities <- GeneActivity(data)
 
-png(file="QC_plot", width=600, height=350)
-v_plot
-dev.off()
-
-#--- FILTER QC ---------------------
-
-data <- subset(
-  x = data,
-  subset = peak_region_fragments > 3000 &
-  peak_region_fragments < 20000 &
-  pct_reads_in_peaks > 15 &
-  blacklist_ratio < 0.05 &
-  nucleosome_signal < 4 &
-  TSS.enrichment > 2
-)
-
-print("FILTER OK")
-
-#--- PLOT FILTERED -----------------
-
-v_plot = VlnPlot(
-  object = data,
-  features = c('pct_reads_in_peaks', 'peak_region_fragments',
-               'TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
-  pt.size = 0.1,
-  ncol = 5,
-  cols = "gold"
-)
-
-png(file="QC_plot_filtered", width=600, height=350)
-v_plot
-dev.off()
-
-#--- NORMALIZATION ----------------
-
-data <- RunTFIDF(data)
-data <- FindTopFeatures(data, min.cutoff = 'q0')
-
-print("NORMALIZATION OK")
-
-#--- DIM REDUCTION ----------------
-
-data <- RunSVD(data)
-
-print("DIM REDUCTION OK")
+#add the gene activity matrix to the Seurat object as a new assay and normalize it
+data[['gene.act']] <- CreateAssayObject(counts = gene.activities)
 
 #--- SAVE SEURAT OBJECT -----------
 
