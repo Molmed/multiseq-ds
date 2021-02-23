@@ -1,6 +1,5 @@
 samples = ["REH", "GM12078"]
 samples_combined = '_'.join(samples)
-output_folder = "out/"
 
 rule all:
     input:
@@ -27,7 +26,7 @@ rule cellranger_atac_count:
 
 rule aggr_csv:
     input: 
-        expand("{sample}", sample=samples)
+        expand("out/{sample}", sample=samples)
     output:
         "out/aggr.csv"
     shell:
