@@ -1,0 +1,180 @@
+---
+title: "scATAC explore"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+```{r, results="hide"}
+library(Seurat)
+library(Signac)
+library(rlist)
+library(dplyr)
+library(ggplot2)
+```
+
+## Data 
+
+```{r data}
+data = readRDS("REH_GM12078.rds")
+sample = as.data.frame(read.csv("aggr.csv"))
+```
+
+Add sample information from aggr.csv file used in cellranger-atac aggr.  
+
+```{r add sample}
+data@meta.data["sample"] = unlist(strsplit(rownames(data@meta.data), "-") %>% list.map(.[2]))
+
+for(i in 1:nrow(sample)){
+  data@meta.data[data@meta.data$sample == toString(i),]$sample = sample$library_id[i]
+}
+
+head(data@meta.data)
+```
+## Plot QC and Filter
+
+```{r plot}
+v_plot = VlnPlot(object = data,
+  features = c('pct_reads_in_peaks', 'peak_region_fragments'),
+  pt.size = 0.1,
+  ncol = 5,
+  cols = "orange"
+)
+
+v_plot
+```
+```{r}
+v_plot = VlnPlot(
+  object = data,
+  features = c('TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
+  pt.size = 0.1,
+  ncol = 5,
+  cols = "orange"
+)
+
+v_plot
+```
+
+```{r filter}
+data <- subset(
+  x = data,
+  subset = peak_region_fragments > 3000 &
+  peak_region_fragments < 20000 &
+  pct_reads_in_peaks > 15 &
+  blacklist_ratio < 0.05 &
+  nucleosome_signal < 4 &
+  TSS.enrichment > 2
+)
+```
+
+## Normalization 
+
+Normalizes across cells to correct for differences in cellular sequencing depth. Normalizes across peaks to give higher values to more rare peaks. 
+Use all data (q0) to identify to variable features. 
+
+```{r norm, results="hide"}
+data <- RunTFIDF(data)
+data <- FindTopFeatures(data, min.cutoff = 'q0')
+```
+
+## Linear Dimensionality Reduction 
+
+Singular value decomposition (SVD) using the features (peaks) selected above. This returns a reduced dimension representation of the object (simialrto PCA).
+
+```{r dim reduction}
+data <- RunSVD(data)
+```
+
+
+## Depth correlation 
+
+Check correlation between dimensions and seq depth. First component highly correlated -> don't use. 
+
+```{r corr depth}
+DepthCor(data)
+```
+
+## Cluster 
+RunUMAP: non linear dim reduction (similar to t-SNE) on linear dim reduction
+FindNeighbors: constructs shared nearest neighbour graph 
+FindClusters: identifys clusters from SNN graph 
+
+```{r cluster}
+data <- RunUMAP(object = data, reduction = 'lsi', dims = 2:30)
+data <- FindNeighbors(object = data, reduction = 'lsi', dims = 2:30)
+data <- FindClusters(object = data, verbose = FALSE, algorithm = 3)
+```
+
+```{r plot clusters}
+DimPlot(object = data, 
+        label = TRUE, 
+        shape.by = "sample", 
+        pt.size = 1.2) + 
+  scale_shape_manual(values = c("REH" = 17, "GM12078" = 16)) 
+```
+
+## Differentially Accessible Peaks 
+
+Can be done for any level (clusters assigned above, sample of origin etc). 
+- Plot heatmaps 
+- Plot genomic regions (needs fragments file)
+- Identify closest gene feature to peak 
+
+```{r DA peaks, results="hide"}
+#set cell ident to sample origin 
+Idents(object = data) <- 'samples'
+
+da_peaks <- FindMarkers(
+  object = data,
+  ident.1 = "REH",
+  ident.2 = "GM12078",
+  min.pct = 0.2,
+  test.use = 'LR',
+  latent.vars = 'peak_region_fragments'
+)
+
+```
+
+```{r}
+head(da_peaks)
+```
+
+```{r plot DA}
+
+plot1 <- FeaturePlot(
+  object = data,
+  features = rownames(da_peaks)[1],
+  pt.size = 0.1
+)
+plot2 <- FeaturePlot(
+  object = data,
+  features = rownames(da_peaks)[3],
+  pt.size = 0.1
+)
+
+plot1 | plot2 
+
+```
+
+```{r closest feature}
+closest_genes <- ClosestFeature(data, regions = rownames(da_peaks)[1:10])
+closest_genes[c(1, 3),]
+```
+
+## Gene Activity 
+
+Quantify activity of genes in genome based on chromatine accessibility (done in atac_preproc_seurat.R). Stored in assay gene.act
+
+```{r gene activity}
+DefaultAssay(data) <- 'gene.act'
+
+FeaturePlot(
+  object = data,
+  features = c('RUNX3', 'ABCA4'),
+  pt.size = 0.1,
+  max.cutoff = 'q95',
+  ncol = 3
+)
+
+```
+
