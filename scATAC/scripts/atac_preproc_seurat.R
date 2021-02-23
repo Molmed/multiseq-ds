@@ -102,6 +102,8 @@ gene.activities <- GeneActivity(data)
 #add the gene activity matrix to the Seurat object as a new assay and normalize it
 data[['gene.act']] <- CreateAssayObject(counts = gene.activities)
 
+print("GENE ACT OK")
+
 #--- SAVE SEURAT OBJECT -----------
 
 saveRDS(data, file = args[2])
