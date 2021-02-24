@@ -27,7 +27,7 @@ set.seed(1234)
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)<1) {
-  stop("provide path to dir outs", call.=FALSE)
+  stop("provide path to dir output folder form count/aggr", call.=FALSE)
 }else if(length(args)==1){
   args[1] = "seurat_out"
 }
