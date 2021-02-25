@@ -24,7 +24,7 @@ rule cellranger_atac_count:
         mv {params.sample} out
         """
 
-rule merge:
+rule merge_seurat:
     input:
         expand(output_folder + "/{sample}", sample=samples)
     output:
