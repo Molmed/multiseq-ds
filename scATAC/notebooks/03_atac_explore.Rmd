@@ -80,7 +80,7 @@ RunUMAP: non linear dim reduction (similar to t-SNE) on linear dim reduction
 FindNeighbors: constructs shared nearest neighbour graph 
 FindClusters: identifys clusters from SNN graph 
 
-```{r REH cluster}
+```{r REH cluster, results="hide"}
 data.REH <- RunUMAP(object = data.REH, reduction = 'lsi', dims = 2:30)
 data.REH <- FindNeighbors(object = data.REH, reduction = 'lsi', dims = 2:30)
 data.REH <- FindClusters(object = data.REH, verbose = FALSE, algorithm = 3)
@@ -152,7 +152,7 @@ RunUMAP: non linear dim reduction (similar to t-SNE) on linear dim reduction
 FindNeighbors: constructs shared nearest neighbour graph 
 FindClusters: identifys clusters from SNN graph 
 
-```{r GM cluster}
+```{r GM cluster, results="hide"}
 data.GM12078 <- RunUMAP(object = data.GM12078, reduction = 'lsi', dims = 2:30)
 data.GM12078 <- FindNeighbors(object = data.GM12078, reduction = 'lsi', dims = 2:30)
 data.GM12078 <- FindClusters(object = data.GM12078, verbose = FALSE, algorithm = 3)
@@ -206,6 +206,15 @@ FindClusters: identifys clusters from SNN graph
 combined <- RunUMAP(object = combined, reduction = 'lsi', dims = 2:30)
 combined <- FindNeighbors(object = combined, reduction = 'lsi', dims = 2:30)
 combined <- FindClusters(object = combined, verbose = FALSE, algorithm = 3)
+```
+
+
+```{r}
+DimPlot(object = combined,
+        group.by = "seurat_clusters",
+        shape.by = "id",
+        label = TRUE,
+        pt.size = 1.2)
 ```
 
 ## Differentially Accessible Peaks 
