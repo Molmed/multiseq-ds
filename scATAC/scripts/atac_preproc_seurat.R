@@ -27,7 +27,7 @@ set.seed(1234)
 args = commandArgs(trailingOnly=TRUE)
 
 if (length(args)<1) {
-  stop("provide path to dir output folder form count/aggr", call.=FALSE)
+  stop("provide path to dir outs", call.=FALSE)
 }else if(length(args)==1){
   args[1] = "seurat_out"
 }
@@ -101,8 +101,6 @@ gene.activities <- GeneActivity(data)
 
 #add the gene activity matrix to the Seurat object as a new assay and normalize it
 data[['gene.act']] <- CreateAssayObject(counts = gene.activities)
-
-print("GENE ACT OK")
 
 #--- SAVE SEURAT OBJECT -----------
 
