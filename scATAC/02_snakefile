@@ -1,0 +1,41 @@
+samples = ["REH", "GM12078"]
+samples_combined = '_'.join(samples)
+output_folder = "out"
+
+rule all:
+    input:
+        output_folder + "/" + samples_combined + "_combined.rds" 
+
+rule cellranger_atac_count:
+    input:
+        ref_genome="/crex/data/Chromium/cellranger-ATAC-data/1.2.0/rackham/refdata-cellranger-atac-GRCh38-1.2.0",
+        fastq="/crex/proj/uppstore2017165/nobackup/scATAC/fastq"
+    output:
+        directory(output_folder + "/{sample}")
+    params:
+        sample="{sample}"
+    shell:
+        """
+        module load bioinfo-tools
+        module load cellranger-ATAC/1.2.0
+
+        cellranger-atac count --id={params.sample} --reference={input.ref_genome} --fastqs={input.fastq} --sample={params.sample}
+
+        mv {params.sample} out
+        """
+
+rule merge:
+    input:
+        expand(output_folder + "/{sample}", sample=samples)
+    output:
+        output_folder + "/" + samples_combined + "_combined.rds"
+    shell: 
+        """
+        module load bioinfo-tools
+        module load R/4.0.0
+        module load R_packages/4.0.0
+         
+        Rscript --vanilla scripts/atac_merge_seurat.R {output} {input}
+        """
+
+
