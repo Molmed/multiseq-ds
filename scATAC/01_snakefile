@@ -3,7 +3,7 @@ samples_combined = '_'.join(samples)
 
 rule all:
     input:
-         "out/" + samples_combined + ".rds" 
+         "out/" + samples_combined + "_seurat.rds" 
 
 
 rule cellranger_atac_count:
@@ -11,22 +11,23 @@ rule cellranger_atac_count:
         ref_genome="/crex/data/Chromium/cellranger-ATAC-data/1.2.0/rackham/refdata-cellranger-atac-GRCh38-1.2.0",
         fastq="/crex/proj/uppstore2017165/nobackup/scATAC/fastq" 
     output:
-        directory("out/{sample}")
+        directory("out/{sample}_atac_count")
     params: 
-        sample="{sample}"
+        sample="{sample}",
+        id = "{sample}_atac_count"
     shell: 
         """
         module load bioinfo-tools
         module load cellranger-ATAC/1.2.0
 
-        cellranger-atac count --id={params.sample} --reference={input.ref_genome} --fastqs={input.fastq} --sample={params.sample}
+        cellranger-atac count --id={params.id} --reference={input.ref_genome} --fastqs={input.fastq} --sample={params.sample}
         
-        mv {params.sample} out 
+        mv {params.id} out 
         """
 
 rule aggr_csv:
     input: 
-        expand("out/{sample}", sample=samples)
+        expand("out/{sample}_atac_count", sample=samples)
     output:
         "out/aggr.csv"
     shell:
@@ -46,9 +47,9 @@ rule cellranger_atac_aggr:
         aggr_csv = "out/aggr.csv", 
         ref_genome="/crex/data/Chromium/cellranger-ATAC-data/1.2.0/rackham/refdata-cellranger-atac-GRCh38-1.2.0",
     output: 
-        directory("out/" + samples_combined)
+        directory("out/" + samples_combined + "_atac_aggr")
     params:
-        id = samples_combined 
+        id = samples_combined + "_atac_aggr"
     shell: 
         """
         module load bioinfo-tools
@@ -61,9 +62,9 @@ rule cellranger_atac_aggr:
 
 rule preprocess_seurat: 
     input: 
-        "out/" + samples_combined 
+        "out/" + samples_combined + "_atac_aggr"
     output: 
-        "out/" + samples_combined + ".rds"
+        "out/" + samples_combined + "_seurat.rds"
     shell:
         """
         module load bioinfo-tools

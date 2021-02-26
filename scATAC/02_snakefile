@@ -4,31 +4,32 @@ output_folder = "out"
 
 rule all:
     input:
-        output_folder + "/" + samples_combined + "_combined.rds" 
+        output_folder + "/" + samples_combined + "_combined_seurat.rds" 
 
 rule cellranger_atac_count:
     input:
         ref_genome="/crex/data/Chromium/cellranger-ATAC-data/1.2.0/rackham/refdata-cellranger-atac-GRCh38-1.2.0",
         fastq="/crex/proj/uppstore2017165/nobackup/scATAC/fastq"
     output:
-        directory(output_folder + "/{sample}")
+        directory(output_folder + "/{sample}_atac_count")
     params:
-        sample="{sample}"
+        sample="{sample}",
+        id="{sample}_atac_count"
     shell:
         """
         module load bioinfo-tools
         module load cellranger-ATAC/1.2.0
 
-        cellranger-atac count --id={params.sample} --reference={input.ref_genome} --fastqs={input.fastq} --sample={params.sample}
+        cellranger-atac count --id={params.id} --reference={input.ref_genome} --fastqs={input.fastq} --sample={params.sample}
 
-        mv {params.sample} out
+        mv {params.id} out
         """
 
 rule merge_seurat:
     input:
-        expand(output_folder + "/{sample}", sample=samples)
+        expand(output_folder + "/{sample}_atac_count", sample=samples)
     output:
-        output_folder + "/" + samples_combined + "_combined.rds"
+        output_folder + "/" + samples_combined + "_combined_seurat.rds"
     shell: 
         """
         module load bioinfo-tools
