@@ -1,10 +1,10 @@
 samples = ["REH", "GM12078"]
 samples_combined = '_'.join(samples)
-out_dir = "out"
+out_dir = "03_out"
 
 rule all:
     input:
-         expand(out_dir + "/{sample}_preproc.rds", sample = samples)    
+         out_dir + "/" + samples_combined + "_merge_seurat.rds"    
 
 rule cellranger_atac_count:
     input: 
@@ -28,7 +28,7 @@ rule preprocess_seurat:
     input: 
         out_dir + "/{sample}_atac_count"
     output: 
-        out_dir + "/{sample}_preproc.rds"
+        out_dir + "/{sample}_seurat_preproc.rds"
     shell:
         """
         module load bioinfo-tools
@@ -38,4 +38,12 @@ rule preprocess_seurat:
         Rscript --vanilla scripts/atac_preproc_seurat.R {input} {output}
         """
 
+rule merge_seurat:
+    input:
+        expand(out_dir + "/{sample}_seurat_preproc.rds", sample = samples)
+    output:
+        out_dir + "/" + samples_combined + "_merge_seurat.rds"
+    shell:
+        """
+        """
  
