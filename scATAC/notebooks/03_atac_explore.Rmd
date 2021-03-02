@@ -11,272 +11,221 @@ library(dplyr)
 library(ggplot2)
 library(GenomeInfoDb)
 library(EnsDb.Hsapiens.v86)
+library(topGO)
 set.seed(1234) 
 ```
 
-
-## Data 
-
-```{r data}
-data.GM12078 = readRDS("GM12078_preproc.rds")
-data.REH = readRDS("REH_preproc.rds")
+```{r}
+data.filt = readRDS("REH_GM12078_merge_filt_seurat.rds")
+summary = read.csv("REH_GM12078_summary.csv")
 ```
 
-# REH 
+# scATAC-seq data REH + GM12878
 
-## Plot QC and Filter 
-
-```{r REH plot}
-v_plot.REH = VlnPlot(object = data.REH,
-  features = c('pct_reads_in_peaks', 'peak_region_fragments', 'TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
-  pt.size = 0.1,
-  ncol = 5,
-  cols = "orange"
-)
-
-v_plot.REH
-```
-
-```{r REH filter}
-data.REH <- subset(
-  x = data.REH,
-  subset = peak_region_fragments > 3000 &
-  peak_region_fragments < 20000 &
-  pct_reads_in_peaks > 15 &
-  blacklist_ratio < 0.05 &
-  nucleosome_signal < 4 &
-  TSS.enrichment > 2
-)
-```
-
-## Normalization 
-
-Normalizes across cells to correct for differences in cellular sequencing depth. Normalizes across peaks to give higher values to more rare peaks. 
-Use all data (q0) to identify to variable features. 
-
-```{r REH norm, results="hide"}
-data.REH <- RunTFIDF(data.REH)
-data.REH <- FindTopFeatures(data.REH, min.cutoff = 'q0')
-```
-
-## Linear Dimensionality Reduction 
-
-Singular value decomposition (SVD) using the features (peaks) selected above. This returns a reduced dimension representation of the object (simialrto PCA).
-
-```{r REH dim reduction}
-data.REH <- RunSVD(data.REH)
-```
-
-## Depth correlation 
-
-Check correlation between dimensions and seq depth. First component highly correlated -> don't use. 
-
-```{r REH corr depth}
-DepthCor(data.REH )
-```
-
-## Cluster 
-RunUMAP: non linear dim reduction (similar to t-SNE) on linear dim reduction
-FindNeighbors: constructs shared nearest neighbour graph 
-FindClusters: identifys clusters from SNN graph 
-
-```{r REH cluster, results="hide"}
-data.REH <- RunUMAP(object = data.REH, reduction = 'lsi', dims = 2:30)
-data.REH <- FindNeighbors(object = data.REH, reduction = 'lsi', dims = 2:30)
-data.REH <- FindClusters(object = data.REH, verbose = FALSE, algorithm = 3)
-```
-
-```{r REH plot clusters}
-DimPlot(object = data.REH, 
-        label = TRUE, 
-        pt.size = 1.2) 
-```
-
-
-# GM12078
-
-## Plot QC and Filter GM12078
-
-```{r GM plot}
-v_plot.GM12078 = VlnPlot(object = data.GM12078,
-  features = c('pct_reads_in_peaks', 'peak_region_fragments', 'TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
-  pt.size = 0.1,
-  ncol = 5,
-  cols = "orange"
-)
-
-v_plot.GM12078
-```
-
-```{r GM filter}
-data.GM12078 <- subset(
-  x = data.GM12078,
-  subset = peak_region_fragments > 3000 &
-  peak_region_fragments < 20000 &
-  pct_reads_in_peaks > 15 &
-  blacklist_ratio < 0.05 &
-  nucleosome_signal < 4 &
-  TSS.enrichment > 2
-)
-```
-
-## Normalization 
-
-Normalizes across cells to correct for differences in cellular sequencing depth. Normalizes across peaks to give higher values to more rare peaks. 
-Use all data (q0) to identify to variable features. 
-
-```{r GM norm, results="hide"}
-data.GM12078 <- RunTFIDF(data.GM12078)
-data.GM12078 <- FindTopFeatures(data.GM12078, min.cutoff = 'q0')
-```
-
-## Linear Dimensionality Reduction 
-
-Singular value decomposition (SVD) using the features (peaks) selected above. This returns a reduced dimension representation of the object (simialrto PCA).
-
-```{r GM dim reduction}
-data.GM12078 <- RunSVD(data.GM12078)
-```
-
-
-## Depth correlation 
-
-Check correlation between dimensions and seq depth. First component highly correlated -> don't use. 
-
-```{r GM corr depth}
-DepthCor(data.GM12078)
-```
-
-## Cluster 
-RunUMAP: non linear dim reduction (similar to t-SNE) on linear dim reduction
-FindNeighbors: constructs shared nearest neighbour graph 
-FindClusters: identifys clusters from SNN graph 
-
-```{r GM cluster, results="hide"}
-data.GM12078 <- RunUMAP(object = data.GM12078, reduction = 'lsi', dims = 2:30)
-data.GM12078 <- FindNeighbors(object = data.GM12078, reduction = 'lsi', dims = 2:30)
-data.GM12078 <- FindClusters(object = data.GM12078, verbose = FALSE, algorithm = 3)
-```
-
-```{r GM plot clusters}
-DimPlot(object = data.GM12078, 
-        label = TRUE, 
-        pt.size = 1.2) 
-```
-
-# Merge REH and GM12078
-
-```{r merge, results="hide"}
-data.REH$id = "REH"
-data.GM12078$id = "GM12078"
-combined = merge(x = data.REH, y = data.GM12078, add.cell.ids = c("REH", "GM12078"))
-```
-
-## Normalization 
+#### Normalization 
 
 Normalizes across cells to correct for differences in cellular sequencing depth. Normalizes across peaks to give higher values to more rare peaks. 
 Use all data (q0) to identify to variable features. 
 
 ```{r com norm, results="hide"}
-combined <- RunTFIDF(combined)
-combined <- FindTopFeatures(combined, min.cutoff = 'q0')
+data.filt <- RunTFIDF(data.filt)
+data.filt <- FindTopFeatures(data.filt, min.cutoff = 'q0')
 ```
 
-## Linear Dimensionality Reduction 
+#### Linear Dimensionality Reduction 
 
 Singular value decomposition (SVD) using the features (peaks) selected above. This returns a reduced dimension representation of the object (simialrto PCA).
 
 ```{r com dim reduction}
-combined <- RunSVD(combined)
+data.filt <- RunSVD(data.filt)
 ```
-## Depth correlation 
+#### Depth correlation 
 
 Check correlation between dimensions and seq depth. First component highly correlated -> don't use. 
 
 ```{r com corr depth}
-DepthCor(combined)
+DepthCor(data.filt)
 ```
 
-## Cluster 
-RunUMAP: non linear dim reduction (similar to t-SNE) on linear dim reduction
-FindNeighbors: constructs shared nearest neighbour graph 
-FindClusters: identifys clusters from SNN graph 
+#### Cluster 
+**RunUMAP:** non linear dim reduction (similar to t-SNE) on linear dim reduction
+**FindNeighbors:** constructs shared nearest neighbour graph 
+**FindClusters:** identifys clusters from SNN graph 
 
 ```{r com cluster, results="hide"}
-combined <- RunUMAP(object = combined, reduction = 'lsi', dims = 2:30)
-combined <- FindNeighbors(object = combined, reduction = 'lsi', dims = 2:30)
-combined <- FindClusters(object = combined, verbose = FALSE, algorithm = 3)
+data.filt <- RunUMAP(object = data.filt, reduction = 'lsi', dims = 2:30)
+data.filt <- FindNeighbors(object = data.filt, reduction = 'lsi', dims = 2:30)
+data.filt <- FindClusters(object = data.filt, verbose = FALSE, algorithm = 3)
 ```
 
 
 ```{r}
-DimPlot(object = combined,
+DimPlot(object = data.filt,
         group.by = "seurat_clusters",
-        shape.by = "id",
+        shape.by = "sample",
         label = TRUE,
         pt.size = 1.2)
 ```
 
-## Differentially Accessible Peaks 
+#### Differentially Accessible Peaks between Samples  
 
-Can be done for any level (clusters assigned above, sample of origin etc). 
-- Plot heatmaps 
-- Plot genomic regions (needs fragments file)
-- Identify closest gene feature to peak 
+Can be done for any level (clusters assigned above, sample of origin etc).  
+- Plot heatmaps  
+- Plot genomic regions (needs fragments file)  
+- Identify closest gene feature to peak  
 
-```{r DA peaks, results="hide"}
+```{r , results="hide"}
 #set cell ident to sample origin 
-Idents(object = combined) <- 'id'
+Idents(object = data.filt) <- 'sample'
 
 da_peaks <- FindMarkers(
-  object = combined,
+  object = data.filt,
   ident.1 = "REH",
   ident.2 = "GM12078",
   min.pct = 0.2,
   test.use = 'LR',
   latent.vars = 'peak_region_fragments'
 )
+
+da_peaks
 ```
 
 Closest gene to top DA peaks.
 
 ```{r}
-closest_genes <- ClosestFeature(combined, regions = rownames(da_peaks)[1:10])
+closest_genes <- ClosestFeature(data.filt, regions = rownames(da_peaks)[1:100])
 closest_genes
 ```
+
+The peak values can be plotted for top DA regions. 
+
 ```{r plot DA}
 
 plot1 <- FeaturePlot(
-  object = combined,
+  object = data.filt,
   features = rownames(da_peaks)[3],
   pt.size = 0.1
 )
+
 plot2 <- FeaturePlot(
-  object = combined,
+  object = data.filt,
   features = rownames(da_peaks)[10],
   pt.size = 0.1
 )
 
 plot1 | plot2 
-
 ```
 
-## Gene Activity 
+Visualize top DA peaks between samples with values form individua clusters. Cluster 1, 3, 4 and 7 come from REH and the rest from GM12078. 
+
+```{r}
+Idents(object = data.filt) <- 'seurat_clusters'
+features = c(rownames(da_peaks)[3], rownames(da_peaks)[10])
+RidgePlot(data.filt, features = features, ncol = 2)
+```
+```{r}
+VlnPlot(data.filt, features = features)
+```
+
+#### Gene Activity 
 
 Quantify activity of genes in genome based on chromatine accessibility (done in atac_preproc_seurat.R). Stored in assay gene.act
 
-Plot for genes closest to top DA peaks shown above 
+The gene activity can be plotted for the genes closest to the top DA peaks between samples.  
+```{r echo='hide'}
+DefaultAssay(data.filt) <- 'gene.act'
+```
 
-```{r gene activity}
-DefaultAssay(combined) <- 'gene.act'
-
+```{r}
 FeaturePlot(
-  object = combined,
-  features = c('RUNX3', 'ABCA4'),
+  object = data.filt,
+  features = c('TNFRSF8', 'TCEB3', 'PHC2', 'RUNX3', 'DHCR24', 'ABCA4'),
   pt.size = 0.1,
   max.cutoff = 'q95',
   ncol = 3
 )
 
+```
+
+# Differentially Accessible Peaks between GM12878 clusters 
+
+```{r results="hide"}
+Idents(data.filt) = "sample"
+GM12078 = subset(x = data.filt, idents = "GM12078") 
+```
+
+```{r}
+DimPlot(object = GM12078,
+        group.by = "seurat_clusters",
+        label = TRUE,
+        pt.size = 1.2)
+```
+
+Manually assing new clusters based on plot:  
+- Merge cluster 10 and 0   
+- Merge cluster 2, 5 and 6 
+- Remove cells beloning to cluster 4 and 1 
+
+```{r, echo=FALSE}
+Idents(GM12078) = "seurat_clusters"
+GM12078 = subset(GM12078, idents = c("9", "10", "0", "11", "8", "2", "5", "6"))
+```
+
+```{r, echo=FALSE}
+GM12078$new_cluster = ""
+GM12078$new_cluster[GM12078$seurat_clusters == "0" | GM12078$seurat_clusters == "10"] = "1"
+GM12078$new_cluster[GM12078$seurat_clusters == "5" | GM12078$seurat_clusters == "6" | GM12078$seurat_clusters == "2"] = "2"
+GM12078$new_cluster[GM12078$seurat_clusters == "9"] = "3"
+GM12078$new_cluster[GM12078$seurat_clusters == "8"] = "4"
+GM12078$new_cluster[GM12078$seurat_clusters == "11"] = "5"
+```
+
+```{r}
+DimPlot(object = GM12078,
+        group.by = "new_cluster",
+        label = TRUE,
+        pt.size = 1.2)
+```
+
+#### Find Markers
+
+Find all markers destinguishing clusters from eachother. 
+
+```{r, results="hide"}
+Idents(GM12078) = "new_cluster"
+GM12078.markers = FindAllMarkers(GM12078, 
+                                 min.pct = 0.2, 
+                                 test.use = 'LR',
+                                 latent.vars = 'peak_region_fragments')
+```
+
+```{r, echo=FALSE}
+write.csv(GM12078.markers, "GM12078_markers.csv")
+```
+
+Get the top marker for each cluster and plot. Plot order same as order of clusters in table.  
+
+```{r echo=FALSE}
+top.markers = GM12078.markers %>% 
+  group_by(cluster) %>% 
+  slice_min(n = 1, order_by = p_val_adj) 
+top.markers
+```
+
+```{r}
+FeaturePlot(
+  object = GM12078,
+  features = top.markers$gene,
+  pt.size = 0.1, 
+  ncol = 2)
+```
+
+Identify clostest genes to top DA peaks for each cluster. Use pVal < 0.01 to filter peaks. The gene list for each cluster can be used for enrichment analysis. 
+
+```{r}
+closest_genes = ClosestFeature(GM12078, regions = GM12078.markers[GM12078.markers$p_val_adj < 0.01,]$gene)
+
+closest_genes
+write.csv(closest_genes, "GM12078_DA_peaks_genes.csv")
 ```
 

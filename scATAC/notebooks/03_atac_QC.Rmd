@@ -1,0 +1,135 @@
+---
+title: "scATAC QC"
+output: html_notebook
+---
+```{r, results="hide"}
+library(Seurat)
+library(Signac)
+library(rlist)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+
+```{r}
+data = readRDS("REH_GM12078_merge_seurat.rds")
+summary = read.csv("REH_GM12078_summary.csv")
+```
+
+
+```{r}
+#Add sample name 
+data@meta.data["sample"] = unlist(strsplit(data@meta.data$dataset, "_|/") %>% list.map(.[3]))
+```
+
+## Output Summary Cellranger ATAC Count 
+
+**id:** sample id. 
+
+**num_fragments:** total number of reads. 
+
+**frac_waste_total:** fraction of reads removed in filtering. 
+
+**frac_waste_non_cell_barcode:** fraction of reads removed because of missing barcode. Low number of valid barcodes might indicate problems with sequencing or library prep.
+
+**annotated_cells:** total number of cells identified.
+
+**median_fragments_per_cell:** median number of reads per cell. Should be > 500. 
+
+**frac_mapped_confidently:** fraction of read pairs with a 99.9% chance of mapping corerctly to refrence genome. Should be > 80%.  
+
+**q30_bases_fract:**: fraction of reads with q-score > 30  
+- r1 = read 1, ideally > 65%  
+- r2 = read 2, ideally > 65%  
+- si = sample index, ideally > 90%  
+- bc = barcodes, ideally > 65%  
+
+**frac_fragments_overlapping_peaks:** fraction of fragments overlapping identified  peaks.   
+
+**tss_enrichment_score:** summed number of cut sites per base in window around transcription start sites. Should be > 5. Low values may indicate loss of chromatin structure or impropper cell lysis.  
+
+```{r}
+print(summary)
+```
+
+## QC
+
+**pct_reads_in_peaks:** percentage of reads found in peaks. Cells with low values (<15-20%) could represent low quality cells or technical artifacts. 
+
+**peak_region_fragments:** total number reads overlapping fragments. Cells with extramly high number of reads may represent doublets. Cells with low number of reads may need to be excluded due to insufficient sequencing depth. 
+
+```{r, echo=FALSE}
+v_plot_1 = VlnPlot(object = data,
+                   features = c('pct_reads_in_peaks', 'peak_region_fragments'),
+                   pt.size = 0.1,
+                   ncol = 2,
+                   cols = "orange"
+)
+
+v_plot_1
+```
+
+**TSS.enrichment:** TSS enrichment calcuated for individual cells. Low scores may indicate loss of chromatin structure or impropper cell lysis. Cells with low scores should be removed. 
+
+**blacklist_ratio:** Ratio of reads in blacklist region compared to peaks. Blacklist regions are defined by ENCODE and are often associated with artifacts. 
+
+**nucleosome_signal:** DNA fragment sizes should correspond to length of DNA wrapped arround a single nucleosome. The nucleosome signal is the ratio of mononucleosomal to nucleosome free fragments. 
+
+```{r, echo=FALSE}
+v_plot_2 = VlnPlot(object = data,
+                   features = c('TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
+                   pt.size = 0.1,
+                   ncol = 3,
+                   cols = "orange"
+)
+
+v_plot_2
+```
+
+```{r, results="hide"}
+data.filt <- subset(
+  x = data,
+  subset = peak_region_fragments > 3000 &
+    peak_region_fragments < 20000 &
+    pct_reads_in_peaks > 15 &
+    blacklist_ratio < 0.05 &
+    nucleosome_signal < 4 &
+    TSS.enrichment > 2
+)
+```
+
+```{r, echo=FALSE}
+#Add number of cells after filtering to summary 
+n_cells_filt = c(nrow(data.filt@meta.data[data.filt@meta.data$sample == "REH",]), nrow(data.filt@meta.data[data.filt@meta.data$sample == "GM12078",]))
+summary = cbind.data.frame(summary, n_cells_filt)
+
+#add percentage 
+frac_n_cells_filt = c(nrow(data.filt@meta.data[data.filt@meta.data$sample == "REH",])/ summary[summary$id == "REH",]$annotated_cells, nrow(data.filt@meta.data[data.filt@meta.data$sample == "GM12078",])/ summary[summary$id == "GM12078",]$annotated_cells)
+summary = cbind.data.frame(summary, frac_n_cells_filt)
+```
+
+**annotated_cells** is the number of cells before filtering. **n_cells_filt** is the number of cells after filtering.
+
+```{r, echo=FALSE}
+df = summary[,c("id", "annotated_cells", "n_cells_filt")]
+df = gather(df, value = "n_cells", key = "data", -id)
+
+p<-ggplot(data=df, aes(x=id, y=n_cells, fill=data)) +
+  geom_bar(stat="identity", position=position_dodge(), color="black")+
+  scale_fill_brewer(palette="Greens") +
+  ylab("Number of Cells") +
+  xlab("Sample") + 
+  theme_minimal()
+
+p
+```
+```{r}
+summary[,c("id", "annotated_cells", "n_cells_filt", "frac_n_cells_filt")]
+```
+
+```{r, results="hide"}
+saveRDS(data.filt, "REH_GM12078_merge_filt_seurat.rds")
+write.csv(summary, "REH_GM12078_summary.csv")
+```
+

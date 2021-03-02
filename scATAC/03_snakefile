@@ -56,14 +56,15 @@ rule summary:
     input:
         expand(out_dir + "/{sample}_atac_count", sample = samples) 
     output:
-        out_dir + "/" + samples_combined + "_summary.csv" 
+        out_dir + "/" + samples_combined + "_summary.csv"      
     run:
         import pandas as pd
         import csv 
         
         combined = pd.concat([pd.read_csv(f  + "/outs/summary.csv") for f in input])
-        combined = combined[["total_usable_fragments", "num_fragments", "frac_waste_total", "annotated_cells", "median_fragments_per_cell", "r1_q30_bases_fract", "r2_q30_bases_fract", "si_q30_bases_fract", "bc_q30_bases_fract", "frac_fragments_overlapping_peaks"]]
-                          
+        combined["id"] = samples 
+        combined = combined[["id", "total_usable_fragments", "num_fragments", "frac_waste_total", "annotated_cells", "median_fragments_per_cell", "r1_q30_bases_fract", "r2_q30_bases_fract", "si_q30_bases_fract", "bc_q30_bases_fract", "frac_fragments_overlapping_peaks"]]       
+                  
         combined.to_csv(output[0], index=False)
        
 
