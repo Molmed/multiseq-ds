@@ -12,7 +12,7 @@ library(ggplot2)
 ```
 
 
-```{r}
+```{r results="hide"}
 data = readRDS("REH_GM12078_merge_seurat.rds")
 summary = read.csv("REH_GM12078_summary.csv")
 ```
@@ -62,9 +62,10 @@ print(summary)
 ```{r, echo=FALSE}
 v_plot_1 = VlnPlot(object = data,
                    features = c('pct_reads_in_peaks', 'peak_region_fragments'),
+                   group.by = "sample",
                    pt.size = 0.1,
                    ncol = 2,
-                   cols = "orange"
+                   cols = c("orange", "gold")
 )
 
 v_plot_1
@@ -79,9 +80,10 @@ v_plot_1
 ```{r, echo=FALSE}
 v_plot_2 = VlnPlot(object = data,
                    features = c('TSS.enrichment', 'blacklist_ratio', 'nucleosome_signal'),
+                   group.by = "sample",
                    pt.size = 0.1,
                    ncol = 3,
-                   cols = "orange"
+                   cols = c("orange", "gold")
 )
 
 v_plot_2

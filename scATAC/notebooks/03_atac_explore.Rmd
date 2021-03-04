@@ -196,7 +196,8 @@ Idents(GM12078) = "new_cluster"
 GM12078.markers = FindAllMarkers(GM12078, 
                                  min.pct = 0.2, 
                                  test.use = 'LR',
-                                 latent.vars = 'peak_region_fragments')
+                                 latent.vars = 'peak_region_fragments', 
+                                 return.thresh = 0.01)
 ```
 
 ```{r, echo=FALSE}
@@ -220,12 +221,25 @@ FeaturePlot(
   ncol = 2)
 ```
 
-Identify clostest genes to top DA peaks for each cluster. Use pVal < 0.01 to filter peaks. The gene list for each cluster can be used for enrichment analysis. 
+Identify clostest genes to top DA peaks for each cluster. The gene list for each cluster can be used for enrichment analysis. Merge with information about the peaks. 
 
 ```{r}
 closest_genes = ClosestFeature(GM12078, regions = GM12078.markers[GM12078.markers$p_val_adj < 0.01,]$gene)
 
 closest_genes
+```
+
+```{r}
+
+test = merge(closest_genes, 
+             GM12078.markers[,c("gene", "cluster", "p_val_adj", "avg_log2FC")], 
+             by.x = "query_region", 
+             by.y = "gene", 
+             all = FALSE)
+
+test
+```
+```{r}
 write.csv(closest_genes, "GM12078_DA_peaks_genes.csv")
 ```
 
