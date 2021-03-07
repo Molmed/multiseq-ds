@@ -58,6 +58,10 @@ data.filt <- FindNeighbors(object = data.filt, reduction = 'lsi', dims = 2:30)
 data.filt <- FindClusters(object = data.filt, verbose = FALSE, algorithm = 3)
 ```
 
+```{r}
+saveRDS(data.filt, "REH_GM12078_norm_cluster_seurat.rds")
+```
+
 
 ```{r}
 DimPlot(object = data.filt,
@@ -231,15 +235,15 @@ closest_genes
 
 ```{r}
 
-test = merge(closest_genes, 
+merge = merge(closest_genes, 
              GM12078.markers[,c("gene", "cluster", "p_val_adj", "avg_log2FC")], 
              by.x = "query_region", 
              by.y = "gene", 
-             all = FALSE)
+             all.x = TRUE)
 
-test
+merge
 ```
 ```{r}
-write.csv(closest_genes, "GM12078_DA_peaks_genes.csv")
+write.csv(merge, "GM12078_DA_peaks_genes.csv")
 ```
 

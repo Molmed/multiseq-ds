@@ -1,0 +1,414 @@
+---
+title: "scATAC Enrichment and Pathways"
+output: html_notebook
+---
+Preform gene set enrichment for each cluster.  
+
+```{r, results="hide"}
+library(Seurat)
+library(Signac)
+library(clusterProfiler)
+library(enrichplot)
+library(ggplot2)
+library("org.Hs.eg.db")
+library(pathview)
+library(RColorBrewer)
+library(dplyr)
+```
+
+```{r, results="hide"}
+data.filt = readRDS("REH_GM12078_norm_cluster_seurat.rds")
+DA.peaks = read.csv("GM12078_DA_peaks_genes.csv")
+DA.peaks
+```
+
+```{r, echo=FALSE}
+data.filt$new_cluster = ""
+data.filt$new_cluster[data.filt$seurat_clusters == "0" | data.filt$seurat_clusters == "10"] = "1"
+data.filt$new_cluster[data.filt$seurat_clusters == "5" | data.filt$seurat_clusters == "6" | data.filt$seurat_clusters == "2"] = "2"
+data.filt$new_cluster[data.filt$seurat_clusters == "9"] = "3"
+data.filt$new_cluster[data.filt$seurat_clusters == "8"] = "4"
+data.filt$new_cluster[data.filt$seurat_clusters == "11"] = "5"
+```
+
+```{r,results="hide",echo=FALSE}
+Idents(data.filt) = "new_cluster"
+top20 <- DA.peaks %>% 
+  group_by(cluster) %>% 
+  slice_max(n = 20, order_by = abs(avg_log2FC))
+
+heatmap = DoHeatmap(data.filt, 
+          features = top20[order(top20$cluster),]$query_region, 
+          cells = rownames(data.filt@meta.data[data.filt@meta.data$new_cluster != "",]), 
+          slot = "data") +
+  scale_fill_gradient2(
+  limits = c(-1,5), 
+  mid = "#ffeda0", 
+  high = "#e31a1c",
+  low = "#2c7fb8",
+  space = "Lab",
+  na.value = "white",
+  guide = "colourbar",
+  aesthetics = "fill") 
+
+cluster = DimPlot(object = data.filt,
+        cells = rownames(data.filt@meta.data[data.filt@meta.data$new_cluster != "",]),
+        group.by = "new_cluster",
+        label = TRUE,
+        pt.size = 1.2)
+
+heatmap
+cluster
+```
+
+
+## Cluster 1 
+
+```{r, echo=FALSE}
+#log2 fold change 
+gene.list = DA.peaks[DA.peaks$cluster == "1",]$avg_log2FC
+names(gene.list) = DA.peaks[DA.peaks$cluster == "1",]$gene_id
+gene.list = gene.list[sort.list(gene.list, decreasing = T)]
+```
+
+#### Gene Ontology Overrepresentation Analysis
+No enriched terms found. 
+
+```{r, results="hide"}
+ego.1 <- enrichGO(gene = names(gene.list),
+                keyType = "ENSEMBL",
+                OrgDb = org.Hs.eg.db,
+                ont = "ALL",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.01,
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+```
+
+#### Gene Set Enrichement Analysis
+
+```{r, results="hide"}
+gse.1 <- gseGO(geneList=gene.list, 
+             ont ="ALL", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pAdjustMethod = "none", 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = org.Hs.eg.db)
+```
+
+```{r, results="hide", echo=FALSE}
+gse.1 = setReadable(gse.1, 'org.Hs.eg.db', 'ENSEMBL')
+heatplot(gse.1, foldChange = gene.list, showCategory = 20) +
+  scale_fill_gradient2(
+  limits = c(-2,2), 
+  low = "#225ea8", 
+  high = "#e31a1c",
+  mid = "#ffffcc",
+  midpoint = 0,
+  space = "Lab",
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill") 
+```
+
+#### KEGG Pathway Enrichment
+
+No enriched pathways found. 
+
+```{r, results="hide"}
+gene.list.entrez = bitr(names(gene.list), 
+                        fromType="ENSEMBL", 
+                        toType="ENTREZID", 
+                        OrgDb="org.Hs.eg.db")
+
+kk.1 <- enrichKEGG(gene = gene.list.entrez$ENTREZID, organism = 'hsa')
+```
+
+## Cluster 2
+
+```{r, echo=FALSE}
+#log2 fold change 
+gene.list = DA.peaks[DA.peaks$cluster == "2",]$avg_log2FC
+names(gene.list) = DA.peaks[DA.peaks$cluster == "2",]$gene_id
+gene.list = gene.list[sort.list(gene.list, decreasing = T)]
+```
+
+ 
+#### Gene Ontology Overrepresentation Analysis 
+
+Few enriched terms found: cytoplasmic side of membrane, cytoplasmic side of plasma membrane, extrinsic component of cytoplasmic side of plasma membrane and cellular response to alcohol 
+
+```{r, results="hide"}
+ego.2 <- enrichGO(gene = names(gene.list),
+                keyType = "ENSEMBL",
+                OrgDb = org.Hs.eg.db,
+                ont = "ALL",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.01,
+                qvalueCutoff  = 0.05,
+                readable      = TRUE)
+```
+
+#### Gene Set Enrichement Analysis 
+
+```{r, results="hide"}
+gse.2 <- gseGO(geneList=gene.list, 
+             ont ="ALL", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = org.Hs.eg.db, 
+             pAdjustMethod = "none")
+```
+
+```{r, results="hide", echo=FALSE}
+gse.2 = setReadable(gse.2, 'org.Hs.eg.db', 'ENSEMBL')
+heatplot(gse.2, foldChange = gene.list, showCategory = 20) +
+  scale_fill_gradient2(
+  limits = c(-2,2), 
+  low = "#225ea8",
+  high = "#e31a1c",
+  mid = "#ffffcc",
+  midpoint = 0,
+  space = "Lab",
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill"
+)
+```
+
+#### KEGG Pathway Enrichment 
+
+No enriched pathways found. 
+
+```{r, results="hide"}
+gene.list.entrez = bitr(names(gene.list), 
+                        fromType="ENSEMBL", 
+                        toType="ENTREZID", 
+                        OrgDb="org.Hs.eg.db")
+
+kk.2 <- enrichKEGG(gene = gene.list.entrez$ENTREZID, organism = 'hsa')
+```
+
+
+## Cluster 3
+
+```{r, echo=FALSE}
+#log2 fold change 
+gene.list = DA.peaks[DA.peaks$cluster == "3",]$avg_log2FC
+names(gene.list) = DA.peaks[DA.peaks$cluster == "3",]$gene_id
+gene.list = gene.list[sort.list(gene.list, decreasing = T)]
+```
+
+#### Gene Ontology Overrepresentation Analysis 
+
+No enriched terms found. 
+
+```{r, results="hide"}
+ego.3 <- enrichGO(gene = names(gene.list),
+                keyType = "ENSEMBL",
+                OrgDb = org.Hs.eg.db,
+                ont = "ALL",
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.01,
+                qvalueCutoff = 0.05,
+                readable = TRUE)
+```
+
+#### Gene Set Enrichement Analysis 
+
+```{r, results="hide"}
+gse.3 <- gseGO(geneList=gene.list, 
+             ont ="ALL", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = org.Hs.eg.db, 
+             pAdjustMethod = "none")
+```
+
+```{r, results="hide", echo=FALSE}
+gse.3 = setReadable(gse.3, 'org.Hs.eg.db', 'ENSEMBL')
+heatplot(gse.3, foldChange = gene.list, showCategory = 20) +
+  scale_fill_gradient2(
+  limits = c(-4,4), 
+  low = "#225ea8",
+  high = "#e31a1c",
+  mid = "#ffffcc",
+  midpoint = 0,
+  space = "Lab",
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill"
+)
+```
+
+#### KEGG pathway enrichment
+
+```{r, results="hide"}
+gene.list.entrez = bitr(names(gene.list), 
+                        fromType="ENSEMBL", 
+                        toType="ENTREZID", 
+                        OrgDb="org.Hs.eg.db")
+
+kk.3 <- enrichKEGG(gene = gene.list.entrez$ENTREZID, 
+                   organism = 'hsa')
+```
+
+```{r, echo=FALSE}
+kk.3 = setReadable(kk.3, "org.Hs.eg.db", "ENTREZID")
+heatplot(kk.3, showCategory = 20) 
+```
+
+## Cluster 4
+
+```{r, echo=FALSE}
+#log2 fold change 
+gene.list = DA.peaks[DA.peaks$cluster == "4",]$avg_log2FC
+names(gene.list) = DA.peaks[DA.peaks$cluster == "4",]$gene_id
+gene.list = gene.list[sort.list(gene.list, decreasing = T)]
+```
+
+#### Gene Ontology Overrepresentation Analysis 
+
+Only one enriched term found: transcription regulator complex 
+
+```{r, results="hide"}
+ego.4 <- enrichGO(gene = names(gene.list),
+                keyType = "ENSEMBL",
+                OrgDb = org.Hs.eg.db,
+                ont = "ALL",
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.01,
+                qvalueCutoff = 0.05,
+                readable = TRUE)
+```
+
+#### Gene Set Enrichement Analysis 
+
+```{r, results="hide"}
+gse.4 <- gseGO(geneList=gene.list, 
+             ont ="ALL", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = org.Hs.eg.db, 
+             pAdjustMethod = "none")
+```
+
+```{r, results="hide", echo=FALSE}
+gse.4 = setReadable(gse.4, 'org.Hs.eg.db', 'ENSEMBL')
+heatplot(gse.4, foldChange = gene.list, showCategory = 20) +
+  scale_fill_gradient2(
+  limits = c(-2,2), 
+  low = "#225ea8",
+  high = "#e31a1c",
+  mid = "#ffffcc",
+  midpoint = 0,
+  space = "Lab",
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill"
+)
+```
+
+#### KEGG Pathway Enrichment Analysis  
+
+```{r, results="hide"}
+gene.list.entrez = bitr(names(gene.list), 
+                        fromType="ENSEMBL", 
+                        toType="ENTREZID", 
+                        OrgDb="org.Hs.eg.db")
+
+kk.4 <- enrichKEGG(gene = gene.list.entrez$ENTREZID, organism = 'hsa')
+```
+
+```{r}
+kk.4 = setReadable(kk.4, "org.Hs.eg.db", "ENTREZID")
+heatplot(kk.4)
+```
+
+## Cluster 5
+
+```{r, echo=FALSE}
+#log2 fold change 
+gene.list = DA.peaks[DA.peaks$cluster == "5",]$avg_log2FC
+names(gene.list) = DA.peaks[DA.peaks$cluster == "5",]$gene_id
+gene.list = gene.list[sort.list(gene.list, decreasing = T)]
+```
+
+#### Gene Ontology Overrepresentation Analysis 
+
+No enriched terms found. 
+
+```{r, results="hide"}
+ego.5 <- enrichGO(gene = names(gene.list),
+                keyType = "ENSEMBL",
+                OrgDb = org.Hs.eg.db,
+                ont = "ALL",
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.01,
+                qvalueCutoff = 0.05,
+                readable = TRUE)
+```
+
+#### Gene Set Enrichement Analysis 
+
+```{r, results="hide"}
+gse.5 <- gseGO(geneList=gene.list, 
+             ont ="ALL", 
+             keyType = "ENSEMBL", 
+             nPerm = 10000, 
+             minGSSize = 3, 
+             maxGSSize = 800, 
+             pvalueCutoff = 0.05, 
+             verbose = TRUE, 
+             OrgDb = org.Hs.eg.db, 
+             pAdjustMethod = "none")
+```
+
+```{r, results="hide", echo=FALSE}
+gse.5 = setReadable(gse.5, 'org.Hs.eg.db', 'ENSEMBL')
+heatplot(gse.5, foldChange = gene.list, showCategory = 20) +
+  scale_fill_gradient2(
+  limits = c(-5,5), 
+  low = "#225ea8",
+  high = "#e31a1c",
+  mid = "#ffffcc",
+  midpoint = 0,
+  space = "Lab",
+  na.value = "grey50",
+  guide = "colourbar",
+  aesthetics = "fill"
+)
+```
+
+
+#### KEGG Pathway Enrichment
+
+No enriched pathways found. 
+
+```{r, results="hide"}
+gene.list.entrez = bitr(names(gene.list), 
+                        fromType="ENSEMBL", 
+                        toType="ENTREZID", 
+                        OrgDb="org.Hs.eg.db")
+
+kk.5 <- enrichKEGG(gene = gene.list.entrez$ENTREZID, organism = 'hsa')
+```
+
+
+
