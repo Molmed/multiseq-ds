@@ -2,7 +2,18 @@
 title: "scATAC Enrichment and Pathways"
 output: html_notebook
 ---
-Preform gene set enrichment for each cluster.  
+
+Cellcycle analysis using seurats built in gene sets. 
+
+Gene set enrichment, gene ontology over representation and KEGG pathway enrichment for each cluster using ClusterProfiler. 
+
+Summary of results: 
+- Cluster 4 and 5 show overrespresentation of cells in G1   
+- Cluster 2 shows underrepresentation in G1 and some overrepresentation of S   
+- Some terms related to cellcycle and immune respons show up in the GSEA for cluster 3 (up)  
+- Many terms related to ion homeostasis show up in GSEA for cluster 1 (up) and 2 (down)   
+- Many terms related to immune response show up in GSEA for cluster 4 (down)  
+- Many terms related to metabolic processes show up in GSEA for cluster 5 (up)   
 
 ```{r, results="hide"}
 library(Seurat)
@@ -14,6 +25,7 @@ library("org.Hs.eg.db")
 library(pathview)
 library(RColorBrewer)
 library(dplyr)
+library(tidyr)
 ```
 
 ```{r, results="hide"}
@@ -23,23 +35,24 @@ DA.peaks
 ```
 
 ```{r, echo=FALSE}
-data.filt$new_cluster = ""
-data.filt$new_cluster[data.filt$seurat_clusters == "0" | data.filt$seurat_clusters == "10"] = "1"
-data.filt$new_cluster[data.filt$seurat_clusters == "5" | data.filt$seurat_clusters == "6" | data.filt$seurat_clusters == "2"] = "2"
-data.filt$new_cluster[data.filt$seurat_clusters == "9"] = "3"
-data.filt$new_cluster[data.filt$seurat_clusters == "8"] = "4"
-data.filt$new_cluster[data.filt$seurat_clusters == "11"] = "5"
+Idents(data.filt) = "sample"
+GM12878 = subset(x = data.filt, idents = "GM12078") 
+GM12878$new_cluster = ""
+GM12878$new_cluster[GM12878$seurat_clusters == "0" | GM12878$seurat_clusters == "10"] = "1"
+GM12878$new_cluster[GM12878$seurat_clusters == "5" | GM12878$seurat_clusters == "6" | GM12878$seurat_clusters == "2"] = "2"
+GM12878$new_cluster[GM12878$seurat_clusters == "9"] = "3"
+GM12878$new_cluster[GM12878$seurat_clusters == "8"] = "4"
+GM12878$new_cluster[GM12878$seurat_clusters == "11"] = "5"
 ```
 
-```{r,results="hide",echo=FALSE}
-Idents(data.filt) = "new_cluster"
+```{r,results="hide", echo=FALSE}
+Idents(GM12878) = "new_cluster"
 top20 <- DA.peaks %>% 
   group_by(cluster) %>% 
   slice_max(n = 20, order_by = abs(avg_log2FC))
 
-heatmap = DoHeatmap(data.filt, 
+heatmap = DoHeatmap(GM12878, 
           features = top20[order(top20$cluster),]$query_region, 
-          cells = rownames(data.filt@meta.data[data.filt@meta.data$new_cluster != "",]), 
           slot = "data") +
   scale_fill_gradient2(
   limits = c(-1,5), 
@@ -51,16 +64,50 @@ heatmap = DoHeatmap(data.filt,
   guide = "colourbar",
   aesthetics = "fill") 
 
-cluster = DimPlot(object = data.filt,
-        cells = rownames(data.filt@meta.data[data.filt@meta.data$new_cluster != "",]),
+cluster = DimPlot(object = GM12878,
         group.by = "new_cluster",
         label = TRUE,
         pt.size = 1.2)
 
-heatmap
 cluster
+heatmap
 ```
 
+## Cell Cycle Based on Predicted Gene Activity 
+
+```{r, results="hide"}
+DefaultAssay(GM12878) = "gene.act"
+
+#Marker genes included in Seurat 
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+
+GM12878 <- CellCycleScoring(GM12878, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+```
+```{r}
+DimPlot(object = GM12878,
+        label = TRUE,
+        pt.size = 1.2)
+```
+
+```{r, results="hide"}
+count_phase = GM12878@meta.data %>% count(new_cluster, Phase) %>% spread(key = Phase, value = n)
+rownames(count_phase) = count_phase[,1]
+count_phase = count_phase[,2:4]
+
+chisq <- chisq.test(count_phase)
+corrplot::corrplot(chisq$residuals, is.cor = FALSE)
+```
+
+
+```{r}
+count_phase = GM12878@meta.data %>% count(new_cluster, Phase)
+ggplot(count_phase, aes(x = new_cluster, y = n, fill = Phase)) +
+  geom_bar(stat="identity", position = position_dodge(), color="black") +
+  scale_fill_brewer(palette="Blues") +
+  theme_minimal()
+
+```
 
 ## Cluster 1 
 
