@@ -1,0 +1,65 @@
+samples = ["pbmc_1k_protein"]
+out_dir = "out" 
+
+rule all:
+    input:
+        expand(out_dir + "/{sample}_preprocess_seurat.rds", sample = samples)
+
+rule run_count_rna:
+    input:
+        files="data/pbmc_1k_protein_v3_fastqs/pbmc_1k_protein_v3_gex_fastqs",
+        ref_genome="/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
+    output:
+        out_dir + "/{sample}_filtered_feature_bc_matrix_rna"
+    params:
+       sample="{sample}_rna"
+    shell:
+        """
+        cellranger count \
+        --id={params.sample} \
+        --fastqs={input.files} \
+        --transcriptome={input.ref_genome}
+
+        cp -R {params.sample}/outs/filtered_feature_bc_matrix {output}
+        """
+rule run_count_hto:
+    input:
+        ref_genome="/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
+    output:
+        out_dir + "/{sample}_filtered_feature_bc_matrix_hto"
+    params:
+        sample="{sample}_hto"
+    shell:
+        """
+        cellranger count \
+        --id={params.sample} \
+        --libraries=data/pbmc_1k_protein_v3_library.csv \
+        --feature-ref=data/pbmc_1k_protein_v3_feature_ref.csv \
+        --transcriptome={input.ref_genome} \
+        --expect-cells=1000
+
+        cp -R {params.sample}/outs/filtered_feature_bc_matrix {output}
+        """
+rule demultiplex:
+    input:
+        matrix_rna=out_dir + "/{sample}_filtered_feature_bc_matrix_rna",
+        matrix_hto=out_dir + "/{sample}_filtered_feature_bc_matrix_hto"
+    output:
+        out_dir + "/{sample}_demultiplex.rds"
+    shell:
+        """
+        Rscript --vanilla scripts\demultiplex_seurat.R \
+        {input.matrix_rna} \
+        {input.matrix_hto} \
+        {output}
+        """ 
+
+rule preprocess_seurat:
+    input:
+        out_dir + "/{sample}_demultiplex.rds"
+    output:
+        out_dir + "/{sample}_preprocess_seurat.rds" 
+    shell:
+       """
+       """ 
+
