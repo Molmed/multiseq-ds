@@ -1,0 +1,206 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tapestri)
+library(ggplot2)
+library(dplyr)
+library(magrittr)
+library(ggrepel)
+library(Rtsne)
+```
+
+## Data  
+
+Four files needed to run notebook:  
+
+**amplicons** = the panel amplicon bed file found in the Designer subfolder of the panel zip file.   
+
+**barcode_file** = found in results/tsv of output folder of output folder from tapestri pipeline ({sample}.barcode.cell.distribution.merged.tsv)  
+
+**vcf_header_file** = found in results/txt of output folder of output folder from tapestri pipeline ({sample}.vcf_header.txt)  
+
+**loom_file** = found in results subfolder of output folder of output folder from tapestri pipeline ({sample}.cells.loom)  
+
+```{r, results="hide"}
+
+amplicons = parse_bed("MYE_V2.bed")
+barcode_file = "dna-test.barcode.cell.distribution.merged.tsv"
+vcf_header_file = "dna-test.vcf_header.txt"
+barcodes = read_barcodes(barcode_file, vcf_header_file)
+
+# Read LOOM file
+loom_file = "dna-test.cells.loom"
+loom = connect_to_loom(loom_file)
+```
+
+## Preprocess  
+
+### Normalize Barcodes  
+
+Each cell are normalized by the cells total number of counts. If advanced=TRUE then the amplicons are also normalized. 
+
+```{r}
+normalized_barcodes = normalize_barcodes(barcodes, advanced=TRUE)
+```
+ 
+### Filtering 
+ 
+```{r}
+#extracts all genotypes 
+genotypes <- extract_genotypes(loom, barcodes, gt.filter=FALSE)
+
+#Extracts filtered genotypes (standard values recomended by MissionBio)
+genotypes.filt = extract_genotypes(loom, barcodes, gt.filter=TRUE)
+
+#Filter by zygosity 
+genotypes.filt.zyg <- filter_by_zygosity(genotypes.filt, z.variants=100, z.missing=100, z.het.min=1)
+
+filt = as.data.frame(c(ncol(genotypes), ncol(genotypes.filt), ncol(genotypes.filt.zyg)), row.names = c("Total", "Filtered", "Filtered_Zyg"))
+colnames(filt) = c("count")
+filt
+```
+
+### Extract Annotation for Variants 
+
+```{r}
+genotypes.annot <- annotate_genotypes(loom, barcodes, genotypes)
+write.table(genotypes.annot, "genotypes.annot.tsv", sep="\t", quote=FALSE)
+head(genotypes.annot)
+```
+
+## Cluster 
+
+Determine the optimal number of clusters for data (by k-means and ierarchical clustering). 
+
+```{r, results="hide"}
+max_cluster <- cluster_barcodes(genotypes, "kmeans", "optimal_cluster_kmeans.pdf")
+max_cluster <- cluster_barcodes(genotypes, "hcut", "optimal_cluster_hclust.pdf")
+```
+
+Preforme pca and tSNE to check if the number of clusters above seem ok. Depending on the number of clusters determined by visual inspection choose k-means or hcut to preforme the clsutering. 
+
+```{r}
+# compute PCA
+pca.gt = prcomp(genotypes)
+
+# use correlations from PCA to calculate pairwise similarities (t-SNE)
+tsne.gt = Rtsne(pca.gt$x, pca = FALSE, check_duplicates = FALSE, perplexity = 10)
+tsne1 = tsne.gt$Y[, 1]
+tsne2 = tsne.gt$Y[, 2]
+
+## plot to see how it looks in 2-dimensional space pairwise similarities calculated from t-sne
+plot_noclust <- ggplot(data.frame(tsne.gt$Y), aes(x = tsne1, y = tsne2)) +
+    geom_point(alpha = 0.1) + theme_bw()
+
+plot_noclust
+```
+
+### Hcut Cluster 
+
+```{r}
+# Set number of clusters 
+k = 2 
+
+#hierarchical clustering - compute distances and create a tree
+#method can be complete, ward.D, etc.
+hc.norm = hclust(dist(tsne.gt$Y), method = "ward.D2") 
+gt.norm <- tsne.gt
+
+#cut the tree into two clusters (k can change)
+gt.norm$hclust = factor(cutree(hc.norm, k=k))
+
+#define a column with clusters as factor
+info.gt = tibble(hclust = factor(gt.norm$hclust))
+
+#get a table with cluster annotations to 1st and 2nd dimensions from t-sne output 
+info.gt <- info.gt %>% mutate(tsne1 = tsne.gt$Y[, 1], tsne2 = tsne.gt$Y[, 2])
+
+#calculate the mean of the two dimensions for each group
+hc.norm.cent = info.gt %>% group_by(hclust) %>% dplyr::select(tsne1,
+    tsne2) %>% summarize_all(mean)
+```
+
+```{r}
+#visualize 
+plot_hc <- ggplot(info.gt, aes(x = tsne1, y = tsne2, colour = hclust)) +
+    geom_point(alpha = 0.3) + theme_bw() + geom_label_repel(aes(label = hclust),
+    data = hc.norm.cent) + guides(colour = FALSE) +
+    ggtitle("Hierarchical Clustering - Linkage criterion: Average")
+
+plot_hc
+```
+
+### K-means Cluster 
+
+```{r}
+#Set number of clusters 
+k = 2 
+
+## perform k-means clustering and choose the number of clusters - here is 2  
+set.seed(123456)
+km.gt = kmeans(tsne.gt$Y, centers=k, nstart = 200, iter.max = 100)
+
+# create a new column with the groups derived from kmeans clustering
+info.gt$kmeans = factor(km.gt$cluster)
+
+# calculate the mean for each dimension
+km.cent = info.gt %>% group_by(kmeans) %>% dplyr::select(tsne1,
+    tsne2) %>% summarize_all(mean)
+
+```
+
+```{r}
+# visualize
+plot_k <- ggplot(info.gt, aes(x = tsne1, y = tsne2, colour = kmeans)) +
+    geom_point(alpha = 0.3) + theme_bw() + geom_label_repel(aes(label = kmeans),
+    data = km.cent) + guides(colour = FALSE) + ggtitle("k-means")
+
+plot_k
+```
+
+### Heatmap 
+
+OBS: cluster and chromosome lables and legend is missing when displaying heatmap in notebook. Available in "genotypes_heatmap.pdf". 
+
+```{r, results="hide"}
+snv_heatmap(genotypes, max_cluster=k, outfile="genotypes_heatmap.pdf", median.filter=TRUE, median.bin=11, annotations=genotypes.annot)
+```
+
+Which cells belong to which cluster. The cluster with the lowest number of cells 
+
+```{r}
+#Assign cluster based of SNVs
+snv_clust <- snv_clustering(genotypes, max_cluster=k)
+
+#number of cells in each cluster 
+table(snv_clust$cluster)
+```
+
+### Ploidy 
+
+Choose the cluster with most heterozygosity (inspekt heatmap above). Choose this cluster as norm.cluster in compute_ploidy. 
+
+```{r}
+ploidy <- compute_ploidy(normalized_barcodes, "kmeans", max_cluster=2, snv_clust, norm.cluster=2)
+
+ploidy_heatmap(ploidy, amplicons, outfile='ploidy.amplicons.pdf')
+```
+
+ONly plot for genes with more than 3 amplicons. 
+
+```{r}
+ploidy_heatmap(ploidy, amplicons, groupby.genes=TRUE, min.amplicons=3, outfile='ploidy.genes.3.pdf')
+```
+
+### Line Plots 
+
+Visualize using line plots. Is there is gain or loss (assuming cluster 2 is the controll). Same genes as reduced heatmap (min 3 amplicons per gene). 
+
+```{r, results="hide"}
+ploidy_lineplot(ploidy, amplicons, 'lineplot_cl1.pdf', snv_clust, 1, min.amplicons = 3)
+ploidy_lineplot(ploidy, amplicons, 'lineplot_cl2.pdf', snv_clust, 2, min.amplicons = 3)
+```
+
