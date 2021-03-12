@@ -1,16 +1,19 @@
 samples = ["pbmc_1k_protein"]
+samples_combined = '_'.join(samples)
 out_dir = "out" 
 
 rule all:
     input:
-        expand(out_dir + "/{sample}_preprocess_seurat.rds", sample = samples)
+        expand(out_dir + "/{sample}_demultiplex.rds", sample = samples), 
+        out_dir + "/summary_rna.csv", 
+        out_dir + "/summary_hto.csv"
 
 rule run_count_rna:
     input:
         files="data/pbmc_1k_protein_v3_fastqs/pbmc_1k_protein_v3_gex_fastqs",
         ref_genome="/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
     output:
-        out_dir + "/{sample}_filtered_feature_bc_matrix_rna"
+        directory(out_dir + "/{sample}_rna")
     params:
        sample="{sample}_rna"
     shell:
@@ -20,13 +23,13 @@ rule run_count_rna:
         --fastqs={input.files} \
         --transcriptome={input.ref_genome}
 
-        cp -R {params.sample}/outs/filtered_feature_bc_matrix {output}
+        mv {params.sample} out_dir
         """
 rule run_count_hto:
     input:
         ref_genome="/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
     output:
-        out_dir + "/{sample}_filtered_feature_bc_matrix_hto"
+        directory(out_dir + "/{sample}_hto")
     params:
         sample="{sample}_hto"
     shell:
@@ -38,12 +41,12 @@ rule run_count_hto:
         --transcriptome={input.ref_genome} \
         --expect-cells=1000
 
-        cp -R {params.sample}/outs/filtered_feature_bc_matrix {output}
+        mv {params.sample}/outs/ out_dir 
         """
 rule demultiplex:
     input:
-        matrix_rna=out_dir + "/{sample}_filtered_feature_bc_matrix_rna",
-        matrix_hto=out_dir + "/{sample}_filtered_feature_bc_matrix_hto"
+        matrix_rna=out_dir + "/{sample}_rna",
+        matrix_hto=out_dir + "/{sample}_hto"
     output:
         out_dir + "/{sample}_demultiplex.rds"
     shell:
@@ -54,12 +57,26 @@ rule demultiplex:
         {output}
         """ 
 
-rule preprocess_seurat:
+rule summary:
     input:
-        out_dir + "/{sample}_demultiplex.rds"
+        rna = expand(out_dir + "/{sample}_rna", sample = samples), 
+        hto = expand(out_dir + "/{sample}_hto", sample = samples)
     output:
-        out_dir + "/{sample}_preprocess_seurat.rds" 
-    shell:
-       """
-       """ 
+        out_dir + "/summary_rna.csv",
+        out_dir + "/summary_hto.csv"
+    run:
+        import pandas as pd
+        import csv 
+        
+        print(input) 
+        combined_rna = pd.concat([pd.read_csv(f  + "/outs/metrics_summary.csv") for f in input.rna]) 
+        combined_rna["id"] = samples
+        combined_rna.to_csv(output[0], index=False) 
+
+        print(input[1])
+	combined_hto = pd.concat([pd.read_csv(f + "/outs/metrics_summary.csv") for f in input.hto])
+        combined_hto["id"] = samples
+        combined_hto.to_csv(output[1], index=False)
+
+
 
