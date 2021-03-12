@@ -2,16 +2,16 @@
 
 #USE: 
 # Rscript --vanilla demultiplex_seurat.R \
-# "path/to/filtered_feature_bc_matrix_RNA" \
-# "path/to/filtered_feature_bc_matrix_HT" \
+# "path/to/filtered_feature_bc_matrix" #rna \
+# "path/to/filtered_feature_bc_matrix" #hto\
 # "output_file_name"
 
 library(Seurat)
 
 #--- args from comandline ----------
 
-#args[1] = path/to/filtered_feature_bc_matrix_RNA
-#args[2] = path/to/filtered_feature_bc_matrix_HT 
+#args[1] = path/to/filtered_feature_bc_matrix for RNA
+#args[2] = path/to/filtered_feature_bc_matrix for HTO
 #args[3] = output_file_name
 
 args = commandArgs(trailingOnly=TRUE)
@@ -22,13 +22,19 @@ if (length(args)<2) {
   args[3] = "out"
 }
 
+dir_rna = paste(args[1], "/outs/filtered_feature_bc_matrix", sep = "")
+dir_hto = paste(args[2], "/outs/filtered_feature_bc_matrix", sep = "")
+
+print(dir_rna)
+print(dir_hto)
+
 #--- DATA ----------------------
 
 #read umi matrix 
-rna.data = Read10X(data.dir = args[1])
+rna.data = Read10X(data.dir = dir_rna)
 
 #read hashtag matrix 
-hto.data = Read10X(data.dir = args[2])
+hto.data = Read10X(data.dir = dir_hto)
 
 #--- CELL BARCODES -------------
 

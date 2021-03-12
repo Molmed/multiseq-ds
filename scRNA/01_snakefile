@@ -51,7 +51,10 @@ rule demultiplex:
         out_dir + "/{sample}_demultiplex.rds"
     shell:
         """
-        Rscript --vanilla scripts\demultiplex_seurat.R \
+        module load R/4.0.0
+        module load R_packages/4.0.0
+
+        Rscript --vanilla scripts/rna_demultiplex_seurat.R \
         {input.matrix_rna} \
         {input.matrix_hto} \
         {output}
