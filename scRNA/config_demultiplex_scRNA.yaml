@@ -1,0 +1,28 @@
+#Configuration file for demultiplexing scRNA-seq data 
+
+#samples 
+SAMPLES:
+    ["pbmc_1k_protein"]
+
+#path to output dir 
+OUT_DIR: "out"
+
+#path to refrence genome 
+REF_GENOME: "/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
+
+#path to folder with fastq files 
+FASTQ_FOLDER: "/data/pbmc_1k_protein_v3_fastqs/pbmc_1k_protein_v3_gex_fastqs"
+
+#path to folder with scripts
+SCRIPTS: "/scripts"
+
+#path to libary csv file for barcode library 
+#https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis)
+BARCODE_LIB: "/data/pbmc_1k_protein_v3_library.csv"
+
+#path to csv file with barcode info 
+#https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis
+BARCODES: "/data/pbmc_1k_protein_v3_feature_ref.csv"
+
+#expected number of cells
+EXP_CELLS: 1000

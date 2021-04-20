@@ -47,6 +47,14 @@ Check correlation between dimensions and seq depth. First component highly corre
 DepthCor(data.filt)
 ```
 
+### Dimensionality 
+
+```{r}
+ElbowPlot(data.filt, ndims = 30, reduction = "lsi")
+```
+
+
+
 #### Cluster 
 **RunUMAP:** non linear dim reduction (similar to t-SNE) on linear dim reduction
 **FindNeighbors:** constructs shared nearest neighbour graph 
@@ -55,20 +63,20 @@ DepthCor(data.filt)
 ```{r com cluster, results="hide"}
 data.filt <- RunUMAP(object = data.filt, reduction = 'lsi', dims = 2:30)
 data.filt <- FindNeighbors(object = data.filt, reduction = 'lsi', dims = 2:30)
-data.filt <- FindClusters(object = data.filt, verbose = FALSE, algorithm = 3)
-```
-
-```{r}
-saveRDS(data.filt, "REH_GM12078_norm_cluster_seurat.rds")
+data.filt <- FindClusters(object = data.filt, verbose = FALSE, algorithm = 3, resolution = 0.4)
 ```
 
 
 ```{r}
-DimPlot(object = data.filt,
-        group.by = "seurat_clusters",
+p1 = DimPlot(object = data.filt,
         shape.by = "sample",
         label = TRUE,
-        pt.size = 1.2)
+        pt.size = 1.5, 
+        label.size = 5, 
+        combine = TRUE) + 
+    labs(color='cluster', shape="sample") +
+    ggtitle("A")
+p1
 ```
 
 #### Differentially Accessible Peaks between Samples  
