@@ -1,0 +1,100 @@
+
+configfile: "snakemake_final/config_process_scATAC.yaml"
+
+rule all:
+    input:
+        expand(config["OUT_DIR"] + "/{sample}_demultiplex_preprocess.rds", sample = config["SAMPLES"]),
+        config["OUT_DIR"] + "/summary_atac.csv",                                                                                                                                
+        config["OUT_DIR"] + "/summary_hto.csv"    
+
+rule cellranger_atac_count: 
+    output:
+        directory(config["OUT_DIR"] + "/{sample}_atac_count")
+    params: 
+        sample="{sample}",
+        id="{sample}_atac_count"
+    shell: 
+        """
+        module load bioinfo-tools
+        module load cellranger-ATAC/1.2.0
+
+        cellranger-atac count \
+        --id={params.id} \
+        --reference=config["REF_GENOME"] \
+        --fastqs=config["FASTQ_FOLDER"] \
+        --sample={params.sample}
+        
+        mv {params.id} config["OUT_DIR"] 
+        """
+rule run_count_hto:
+    output:
+        directory(config["OUT_DIR"] + "/{sample}_hto")
+    params:
+        sample="{sample}_hto"
+    shell:
+        """
+        cellranger count \
+        --id={params.sample} \
+        --libraries=config["BARCODE_LIB"] \
+        --feature-ref=config["BARCODES"] \
+        --transcriptome=config["REF_GENOME"] \
+        --expect-cells=config["EXP_CELLS"]
+
+        mv {params.sample} config["OUT_DIR"] 
+        """
+
+rule demultiplex:
+    input:
+        matrix_rna=config["OUT_DIR"] + "/{sample}_atac_count",
+        matrix_hto=config["OUT_DIR"] + "/{sample}_hto"
+    output:
+        config["OUT_DIR"] + "/{sample}_demultiplex.rds"
+    shell:
+        """
+        module load R/4.0.0
+        module load R_packages/4.0.0
+
+        Rscript --vanilla \
+        {config[SCRIPTS]}/atac_demultiplex_seurat.R \
+        {input.matrix_rna} \
+        {input.matrix_hto} \
+        {output}
+        """ 
+
+rule preprocess:
+    input:
+        config["OUT_DIR"] + "/{sample}_demultiplex.rds"
+    output:
+        config["OUT_DIR"] + "/{sample}_demultiplex_preprocess.rds"
+    shell:
+        """
+        module load R/4.0.0
+        module load R_packages/4.0.0
+        
+        Rscript --vanilla \
+        {config[SCRIPTS]}/atac_preproc_demultiplexed_data_seurat.R \
+        {input} \
+        {output}
+        """
+rule summary:
+    input:
+        atac = expand(config["OUT_DIR"] + "/{sample}_atac_count", sample = config["SAMPLES"]),
+        hto = expand(config["OUT_DIR"] + "/{sample}_hto", sample = config["SAMPLES"]) 
+    output:
+        config["OUT_DIR"] + "/summary_atac.csv",
+        config["OUT_DIR"] + "/summary_hto.csv"      
+    run:
+        import pandas as pd
+        import csv 
+        
+        combined = pd.concat([pd.read_csv(f  + "/outs/summary.csv") for f in input.atac])
+        combined["id"] = samples 
+        combined = combined[["id", "num_fragments", "frac_waste_total", "frac_waste_no_barcode", "annotated_cells", "median_fragments_per_cell", "frac_mapped_confidently", "r1_q30_bases_fract", "r2_q30_bases_fract", "si_q30_bases_fract", "bc_q30_bases_fract", "frac_fragments_overlapping_peaks", "tss_enrichment_score"]]       
+                  
+        combined.to_csv(output[0], index=False)
+        
+        combined_hto = pd.concat([pd.read_csv(f + "/outs/metrics_summary.csv") for f in input.hto])
+        combined_hto["id"] = samples
+        combined_hto.to_csv(output[1], index=False) 
+       
+

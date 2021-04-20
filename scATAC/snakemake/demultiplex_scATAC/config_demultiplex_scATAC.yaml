@@ -1,0 +1,32 @@
+#Configuration file for processing scATAC-seq data 
+
+#samples 
+SAMPLES:
+    ["REH", "GM12078"]
+
+#used for naming files 
+RUN_ID: "REH_GM12978"
+
+#path to output dir 
+OUT_DIR: "out"
+
+#path to refrence genome 
+REF_GENOME: "/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
+
+#path to folder with fastq files for all samples 
+FASTQ_FOLDER: "/crex/proj/uppstore2017165/nobackup/scATAC/fastq"
+      
+#path to folder with scripts
+SCRIPTS: "/scripts"
+
+#path to libary csv file for barcode library 
+#https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis)
+BARCODE_LIB: ""
+
+#path to csv file with barcode info 
+#https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis
+BARCODES: ""
+
+#expected number of cells
+EXP_CELLS: 1000 
+
