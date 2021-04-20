@@ -1,0 +1,87 @@
+
+configfile: "snakemake_final/config_process_scATAC.yaml"
+
+rule all:
+    input:
+        config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_combined_peaks_seurat.rds",
+        config["OUT_DIR"] + "/" + config["RUN_ID"] + "_merge_seurat.rds", 
+        config["OUT_DIR"] + "/" + config["RUN_ID"] + "_summary.csv"    
+
+rule cellranger_atac_count: 
+    output:
+        directory(config["OUT_DIR"] + "/{sample}_atac_count")
+    params: 
+        sample="{sample}",
+        id="{sample}_atac_count"
+    shell: 
+        """
+        module load bioinfo-tools
+        module load cellranger-ATAC/1.2.0
+
+        cellranger-atac count \
+        --id={params.id} \
+        --reference=config["REF_GENOME"] \
+        --fastqs=config["FASTQ_FOLDER"] \
+        --sample={params.sample}
+        
+        mv {params.id} config["OUT_DIR"] 
+        """
+rule preprocess_seurat: 
+    input: 
+        config["OUT_DIR"] + "/{sample}_atac_count"
+    output: 
+        config["OUT_DIR"] + "/{sample}_seurat_preproc.rds"
+    shell:
+        """
+        module load bioinfo-tools
+        module load R/4.0.0 
+        module load R_packages/4.0.0        
+
+        Rscript --vanilla {config[SCRIPTS]}/atac_preproc_seurat.R {input} {output}
+        """
+
+if config["MERGE"]:
+    rule merge_seurat:
+        input:
+            expand(config["OUT_DIR"] + "/{sample}_seurat_preproc.rds", sample = config["SAMPLES"])
+        output:
+            config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_seurat.rds"
+        shell:
+            """
+            module load bioinfo-tools
+            module load R/4.0.0
+            module load R_packages/4.0.0
+
+            Rscript --vanilla {config[SCRIPTS]}/atac_merge_seurat.R {output} {input}
+            """
+if config["MERGE_COM_PEAKS"]:
+    rule merge_combined_peaks_seurat:
+        input:
+            expand(config["OUT_DIR"] + "/{sample}_seurat_preproc.rds", sample = config["SAMPLES"])
+        output:
+            config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_combined_peaks_seurat.rds"
+        shell:
+            """
+            module load bioinfo-tools
+            module load R/4.0.0
+            module load R_packages/4.0.0
+
+            Rscript --vanilla {config[SCRIPTS]}/atac_merge_combined_peaks_seurat.R {output} {input}
+            """
+
+rule summary:
+    input:
+        expand(config["OUT_DIR"] + "/{sample}_atac_count", sample = config["SAMPLES"]) 
+    output:
+        config["OUT_DIR"] + "/" + config["RUN_ID"] + "_summary.csv"      
+    run:
+        import pandas as pd
+        import csv 
+        
+        combined = pd.concat([pd.read_csv(f  + "/outs/summary.csv") for f in input])
+        combined["id"] = samples 
+        combined = combined[["id", "num_fragments", "frac_waste_total", "frac_waste_no_barcode", "annotated_cells", "median_fragments_per_cell", "frac_mapped_confidently", "r1_q30_bases_fract", "r2_q30_bases_fract", "si_q30_bases_fract", "bc_q30_bases_fract", "frac_fragments_overlapping_peaks", "tss_enrichment_score"]]       
+                  
+        combined.to_csv(output[0], index=False)
+       
+
