@@ -1,0 +1,17 @@
+
+#path to data 
+DATA_DIR: "/castor/project/home/alvaa/tapestri_test/testdata"
+
+#path to genome and genome version
+GENOME: "/castor/project/home/alvaa/tapestri/hg19/ucsc_hg19.fa"
+GENOME_VERS: "hg19"
+
+#path to panel used and panel name 
+PANEL: "/castor/project/home/alvaa/tapestri/panels/Myeloid/"
+PANEL_NAME: "AML" 
+
+#list of sample names 
+SAMPLES: ["DNA-test"]
+
+#output dir 
+OUT_DIR: "dna_output"

@@ -1,0 +1,110 @@
+---
+title: "scRNA HTO"
+output: html_notebook
+---
+
+```{r}
+library(Seurat)
+library(patchwork)
+```
+
+
+### Data 
+
+```{r}
+setwd("C:/Users/alva/multiseq-ds/scRNA/notebooks")
+data = readRDS("pbmc_1k_protein_demultiplex.rds")
+```
+
+### QC 
+```{r}
+data[["percent.mt"]] <- PercentageFeatureSet(data, pattern = "^MT-")
+```
+
+```{r}
+VlnPlot(data, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+```
+
+Filter based on QC.
+
+```{r}
+data <- subset(data, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+```
+
+### Normalize
+
+```{r}
+data <- NormalizeData(data, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+### Variable Features 
+
+```{r}
+data <- FindVariableFeatures(data, selection.method = "vst", nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(data), 10)
+```
+
+```{r}
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(data)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+
+### Scale Data 
+```{r}
+all.genes <- rownames(data)
+data <- ScaleData(data, features = all.genes)
+```
+
+# PCA 
+
+```{r}
+data <- RunPCA(data, features = VariableFeatures(object = data))
+```
+
+```{r}
+VizDimLoadings(data, dims = 1:2, reduction = "pca")
+```
+```{r}
+Idents(data) = "orig.ident"
+DimPlot(data, reduction = "pca")
+```
+
+Determine dimensionality! 
+
+```{r}
+data <- JackStraw(data, num.replicate = 100)
+data <- ScoreJackStraw(data, dims = 1:20)
+JackStrawPlot(data, dims = 1:20)
+```
+
+```{r}
+ElbowPlot(pbmc)
+```
+
+### Cluster Cells 
+
+```{r}
+data <- FindNeighbors(data, dims = 1:10)
+data <- FindClusters(data, resolution = 0.5)
+```
+
+### Visualize using UMAP 
+
+```{r}
+data <- RunUMAP(data, dims = 1:10)
+```
+
+```{r}
+DimPlot(data, reduction = "umap")
+```
+
+
+```{r}
+DefaultAssay(data) = "HTO"
+FeaturePlot(data, reduction = "umap", features = rownames(data)[1:4])
+```
+

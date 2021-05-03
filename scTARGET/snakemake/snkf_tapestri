@@ -1,0 +1,62 @@
+
+configfile: "config_tapestri.yaml" 
+
+rule all:
+    input:
+        expand(config["OUT_DIR"] + "/{sample}", sample = config["SAMPLES"]), 
+        config["OUT_DIR"] + "/sample_summary.csv"
+
+rule run_tapestri:
+    input: 
+        r1 = config["DATA_DIR"] + "/{sample}_L001_R1_001.fastq.gz", 
+        r2 = config["DATA_DIR"] + "/{sample}_L001_R2_001.fastq.gz"
+    output:
+        directory(config["OUT_DIR"] + "/{sample}")
+    shell:
+        """
+        module load bioinfo-tools
+        module load tapestri/2.0.1 
+
+        tapestri dna run \
+        --output-folder {output} \
+        --genome config["GENOME"] \
+        --genome-version config["GENOME_VERS"] \
+        --panel config["PANEL"] \
+        --panel-name config["PANEL_NAME"] \ 
+        --r1 {input.r1} \
+        --r2 {input.r2} \
+        --output-prefix {wildcards.sample} 
+        """
+
+rule summary:
+    input: 
+        expand(config["OUT_DIR"] + "/{sample}", sample = config["SAMPLES"])
+    output:
+        config["OUT_DIR"] + "/sample_summary.csv"
+    run:
+       import pandas as pd 
+       import json
+       import csv     
+       
+       df = list()
+       
+       for f in input:
+           #open json file
+           file = open(f + "/results/dna-test.metrics.json",)
+           data = json.load(file)
+           
+           #remove some information 
+           del data["additional_metrics"]
+           del data["variant_calling"]["ado_summary"]
+           
+           #append to list  
+           df.append(pd.concat([pd.DataFrame(data[i], index = [0]) for i in data.keys()], axis = 1))
+       
+       df = pd.concat(df)
+       df["samples"] = config["SAMPLES"] 
+       df.to_csv(output[0], index=False)           
+           
+      
+
+        
+
