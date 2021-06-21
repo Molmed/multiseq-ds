@@ -1,3 +1,4 @@
+#!/bin/bash
 
 #create TSS file from gene bodies file. TSS+-1000 bp
 
