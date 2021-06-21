@@ -1,0 +1,213 @@
+---
+title: "scWGBS - Lnuclei CpG Islands"
+output: html_notebook
+---
+
+```{r}
+library(Rtsne)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(rlist)
+library(pheatmap)
+library(patchwork)
+```
+
+- 273 cells in original data 
+- 273 cells passed filtering with Epiclomal 
+- 239 non-redundant regions used for clustering by Epiclomal 
+- Lnuclei split into two clusters
+- Epiclomal Basic and Region result in same clusters 
+- No batch effects based on pool 
+- Results of Epiclomal shown both with t-SNE based on mean in each region and individual CpG sites 
+
+## Epiclomal
+- Selects regions with at leas 5% covrage in 10% of the cells
+- Removes redundat regions by checking pearsons correlation between regions (0.95 cutoff used). The region with more missing data is removed. 
+- CpG sites with no data accross all cells and cells with no data across CpG sites are removed.
+- EpiclomalBasic: Assumens true hidden methylation states have same distribution accross all CpG sites  
+- EpiclomalRegion: Allows for variation in distribution across regions 
+
+Clustering: Non-probebalistic clustering methods used to initialize cluster assignment for Epiclomal  
+
+- EucledianClust and DensityCut uses mean methylation vaues in each region to cluster cells
+- HammingClust and PearsonClust uses individual methyation values at CpG sites to cluster cells 
+- Results from the 4 non-probebalistic methods used as initial values in Epiclomal Basic and Region
+
+Epiclomal uses bayesian  algorithm to infer both custer assignment and true hidden methylation states for each cluster. Chooses the best K and cluster assignmnt based on which combination of the two that produces the lowest DIC. 
+
+## DATA 
+
+```{r}
+data_mean_region = read.csv("final_mean_meth_region_Lnuclei_CpGIs.tsv", sep = "\t")
+data_cpg_sites = read.csv("input_Epiclomal_Lnuclei.tsv", sep = "\t")
+cluster_region = read.csv("cluster_posteriors_bestrun_region_Lnuclei.tsv", sep = "\t")
+cells = read.csv("Liver_nuclei_all_210306.csv", sep = ";")
+```
+
+```{r}
+colnames(cluster_region)[2:3] = 1:2
+cluster_region$cluster = colnames(cluster_region[2:3])[apply(cluster_region[2:3],1,which.max)]
+
+cluster_region$col_cluster = ""
+cluster_region[cluster_region$cluster == "1",]$col_cluster = "orange"
+cluster_region[cluster_region$cluster == "2",]$col_cluster = "green4"
+```
+
+```{r}
+data_mean_region[is.na(data_mean_region)] = 0
+data_mean_region = as.data.frame(t(data_mean_region))
+rownames(data_mean_region) = gsub("[.]", "-", rownames(data_mean_region))
+data_mean_region = data_mean_region[rownames(data_mean_region) %in% cluster_region$cell_id, ]
+```
+
+```{r}
+data_cpg_sites[is.na(data_cpg_sites)] = 0
+rownames(data_cpg_sites) = data_cpg_sites$cell_id
+data_cpg_sites = data_cpg_sites[,!colnames(data_cpg_sites) %in% c("cell_id")]
+```
+
+### t-SNE Mean Region
+
+```{r}
+#tsne_region <- Rtsne(data_mean_region, perplexity=20, check_duplicates = FALSE)
+#saveRDS(tsne_region, "tsne_region_Lnuclei.rds")
+
+tsne_region = readRDS("tsne_region_Lnuclei.rds")
+```
+
+# PLOT
+
+```{r}
+tsne_plot_region = data.frame(x = tsne_region$Y[,1], y = tsne_region$Y[,2], cell_id = rownames(data_mean_region))
+tsne_plot_region = merge(tsne_plot_region, cluster_region[c("cell_id", "cluster")], by = "cell_id")
+```
+
+### t-SNE plot by cluster 
+
+```{r}
+ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=cluster), size = 2.5) +
+  scale_colour_manual(values = c("orange", "green4", "royalblue3", "red3")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("A") +
+  theme_bw() +
+  ggtitle("A") +
+   theme(plot.title=element_text(size=30), 
+         legend.text=element_text(size = 17),
+         legend.title=element_text(size = 20))
+```
+
+### Heatmap by cluster 
+
+```{r}
+palette <- colorRampPalette(c("white", "blue"))(n = 299)
+matrix = as.matrix(data_mean_region[cluster_region[order(cluster_region$cluster),]$cell_id,])
+
+heatmap(matrix, col = palette, Rowv = NA, RowSideColors = cluster_region[order(cluster_region$cluster),]$col_cluster, xlab = "regions", ylab = "cells", labRow = NA, labCol = NA, scale = "col") 
+legend(x="right", title = "cluster", legend = c("1", "2"), fill = c("orange", "green4")) 
+```
+
+### t-SNE CpG Sites 
+
+```{r}
+#tsne_basic <- Rtsne(data_cpg_sites, perplexity=20, check_duplicates = FALSE)
+#saveRDS(tsne_basic, "tsne_basic_Lnuclei.rds")
+
+tsne_basic = readRDS("tsne_basic_Lnuclei.rds")
+```
+
+# PLOT 
+
+```{r}
+tsne_plot_basic = data.frame(x = tsne_basic$Y[,1], y = tsne_basic$Y[,2], cell_id = rownames(data_cpg_sites))
+tsne_plot_basic = merge(tsne_plot_basic, cluster_region[c("cell_id", "cluster")], by = "cell_id")
+```
+
+### t-SNE plot by cluster 
+
+```{r}
+ggplot(tsne_plot_basic, aes()) + 
+  geom_point(aes(x=x, y=y, color=cluster), size = 2.5) +
+  scale_colour_manual(values = c("orange", "green4")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("CpG Islands") +
+  theme_bw()
+```
+
+# t-SNE plot by pool
+
+```{r}
+tsne_plot_region$pool = unlist(strsplit(tsne_plot_region$cell_id, split = '-') %>% list.map(.[2]))
+tsne_plot_basic$pool = unlist(strsplit(tsne_plot_basic$cell_id, split = '-') %>% list.map(.[2]))
+```
+
+```{r}
+reg = ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=pool), size = 2.5, show.legend = F) +
+  xlab("dim 1") +
+  ylab("dim 2") + 
+  ggtitle("Mean Region") + 
+  theme_bw()
+
+bas = ggplot(tsne_plot_basic, aes()) + 
+  geom_point(aes(x=x, y=y, color=pool), size = 2.5, show.legend = F) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("CpG Sites") +
+  theme_bw()
+
+reg + bas
+```
+
+## t-SNE plot batch 
+
+```{r}
+tsne_plot_region$Batch = "1"
+tsne_plot_region[tsne_plot_region$pool %in% c("pool76", "pool77", "pool78", "pool79", "pool80", "pool81"),]$Batch = "2"
+tsne_plot_region[tsne_plot_region$pool %in% c("pool82", "pool83", "pool84", "pool85", "pool86", "pool87"),]$Batch = "3"
+
+tsne_plot_basic$batch = "batch1"
+tsne_plot_basic[tsne_plot_basic$pool %in% c("pool76", "pool77", "pool78", "pool79", "pool80", "pool81"),]$batch = "batch2"
+tsne_plot_basic[tsne_plot_basic$pool %in% c("pool82", "pool83", "pool84", "pool85", "pool86", "pool87"),]$batch = "batch3"
+```
+
+```{r}
+reg = ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=batch, shape = batch), size = 2.5, alpha = 0.7, show.legend = F) +
+  scale_color_manual(values = c("green4", "red3", "royalblue3")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("Mean Region") + 
+  theme_bw()
+
+bas = ggplot(tsne_plot_basic, aes()) + 
+  geom_point(aes(x=x, y=y, color=batch, shape = batch), size = 2.5, alpha = 0.7) +
+  scale_color_manual(values = c("green4", "red3", "royalblue3")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("CpG Sites") + 
+  theme_bw()
+
+reg + bas
+```
+
+```{r}
+reg = ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=Batch, shape = Batch), size = 2.5, alpha = 0.7) +
+  scale_color_manual(values = c("green4", "red3", "royalblue3")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("Mean Region") + 
+  theme_bw() +
+  ggtitle("C") + 
+  theme(plot.title=element_text(size=30), 
+         legend.text=element_text(size = 17),
+         legend.title=element_text(size = 20))
+  
+
+reg
+```
+

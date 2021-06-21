@@ -1,0 +1,23 @@
+#Configuration file for merging scATAC-seq objects from demultiplex pipeline  
+
+#samples 
+SAMPLES:
+    ["GM12878_inhouse", "atac_hgmm_10k_nextgem"]
+
+#used for naming files 
+RUN_ID: "GM12878_inhouse_atac_hgmm_10k_nextgem"
+
+#path to output dir from demultiplex pipeline  
+OUT_DIR: "out"
+      
+#path to folder with scripts
+SCRIPTS: "/crex/proj/uppstore2017165/nobackup/alva/pipeline_scATAC/scripts"
+
+#merg samples 
+MERGE: True
+
+#merge samples on common peak set 
+MERGE_COM_PEAKS: True 
+
+#integrate samples using seurat (MERGE_COM_PEAKS also needs to be True)
+INTEGRATE: True

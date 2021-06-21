@@ -1,0 +1,218 @@
+---
+title: "scWGBS - K562"
+output: html_notebook
+---
+
+```{r}
+library(Rtsne)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(rlist)
+library(patchwork)
+library("RColorBrewer")
+```
+
+- 230 cells in original data 
+- 230 cells passed filtering with Epiclomal 
+- 203 non-redundant regions used for clustering by Epiclomal 
+- K562 one cluster 
+- Epiclomal Basic and Region result in same clusters (Only EpiclomalRegion results shown here)
+- Pool 34 & 35 does not cluster together 
+- Batch effects can be seen 
+
+## DATA 
+
+```{r}
+data_region = read.csv("final_mean_meth_region_K562.tsv", sep = "\t")
+data_cpg_site = read.csv("input_Epiclomal_K562.tsv", sep = "\t")
+cluster_region = read.csv("cluster_posteriors_bestrun_region_K562.tsv", sep = "\t")
+```
+
+```{r}
+colnames(cluster_region)[2] = 1
+cluster_region$cluster = colnames(cluster_region[2])[apply(cluster_region[2],1,which.max)]
+cluster_region$col_cluster = c("orange")
+```
+
+```{r}
+data_region[is.na(data_region)] = 0
+data_region = as.data.frame(t(data_region))
+rownames(data_region) = gsub("[.]", "-", rownames(data_region))
+data_region = data_region[rownames(data_region) %in% cluster_region$cell_id,]
+```
+
+```{r}
+data_cpg_site[is.na(data_cpg_site)] = 0
+rownames(data_cpg_site) = data_cpg_site$cell_id
+data_cpg_site = data_cpg_site[,!colnames(data_cpg_site) %in% c("cell_id")]
+```
+
+### t-SNE 
+
+```{r}
+#tsne_region = Rtsne(data_region, perplexity=30, check_duplicates = FALSE)
+#saveRDS(tsne_region, "tsne_region.rds")
+
+tsne_region = readRDS("tsne_region.rds")
+```
+
+```{r}
+tsne_cpg_site = Rtsne(data_cpg_site, perplexity=30, check_duplicates = FALSE)
+saveRDS(tsne_cpg_site, "tsne_cpg_site.rds")
+```
+
+
+# PLOT 
+
+```{r}
+tsne_plot_region = data.frame(x = tsne_region$Y[,1], y = tsne_region$Y[,2], cell_id = rownames(data_region))
+tsne_plot_region = merge(tsne_plot_region, cluster_region[c("cell_id", "cluster")], by = "cell_id")
+```
+
+### t-SNE plot by cluster 
+
+```{r}
+ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=cluster), size = 2.5) +
+  scale_colour_manual(values = c("orange")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  theme_bw() +
+  ggtitle("B") +
+   theme(plot.title=element_text(size=30), 
+         legend.text=element_text(size = 17),
+         legend.title=element_text(size = 20))
+```
+
+### Heatmap by cluster 
+
+```{r}
+palette <- colorRampPalette(c("white", "blue"))(n = 299)
+matrix = as.matrix(data_region[cluster_region[order(cluster_region$cluster),]$cell_id,])
+
+heatmap(matrix, 
+        col = palette, 
+        Rowv = NA, 
+        RowSideColors = cluster_region[order(cluster_region$cluster),]$col_cluster, 
+        xlab = "regions", ylab = "cells", 
+        labRow = NA, labCol = NA)
+legend(x="right", legend = c("1"), fill = c("orange")) 
+```
+
+```{r}
+tsne_plot_cpg_site = data.frame(x = tsne_cpg_site$Y[,1], y = tsne_cpg_site$Y[,2], cell_id = rownames(data_cpg_site))
+tsne_plot_cpg_site = merge(tsne_plot_cpg_site, cluster_region[c("cell_id", "cluster")], by = "cell_id")
+```
+
+### t-SNE plot by cluster 
+
+```{r}
+ggplot(tsne_plot_cpg_site, aes()) + 
+  geom_point(aes(x=x, y=y, color=cluster), size = 2.5) +
+  scale_colour_manual(values = c("orange")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("CpG Islands") +
+  theme_bw()
+```
+
+# t-SNE plot by pool
+
+```{r}
+tsne_plot_region$pool = unlist(strsplit(tsne_plot_region$cell_id, split = '-') %>% list.map(.[2]))
+
+tsne_plot_cpg_site$pool = unlist(strsplit(tsne_plot_cpg_site$cell_id, split = '-') %>% list.map(.[2]))
+```
+
+```{r}
+reg = ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=pool), size = 2.5, show.legend = F) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("Mean Reagion") +
+  theme_bw()
+
+cpg = ggplot(tsne_plot_cpg_site, aes()) + 
+  geom_point(aes(x=x, y=y, color=pool), size = 2.5) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("CpG Sites") +
+  theme_bw()
+reg + cpg
+
+```
+
+### t-SNE plot pool 34 & 35 
+
+```{r}
+pool3435_reg = tsne_plot_region %>% 
+           filter(pool == "pool34" | pool == "pool35")
+
+pool3435_cpg = tsne_plot_cpg_site %>% 
+           filter(pool == "pool34" | pool == "pool35")
+```
+
+```{r}
+reg = ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=cluster), size = 1.5, color = "grey") +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  theme_bw() +
+  geom_point(data = pool3435_reg, aes(x=x, y=y, shape = pool), size = 2.5, color = "red",  show.legend = F) 
+
+cpg = ggplot(tsne_plot_cpg_site, aes()) + 
+  geom_point(aes(x=x, y=y, color=cluster), size = 1.5, color = "grey") +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  theme_bw() +
+  geom_point(data = pool3435_cpg, aes(x=x, y=y, shape = pool), size = 2.5, color = "red") 
+
+reg + cpg 
+
+```
+
+## t-SNE plot batch 
+
+```{r}
+tsne_plot_region$Batch = "1"
+tsne_plot_region[tsne_plot_region$pool %in% c("pool70", "pool71", "pool72", "pool73", "pool74", "pool75"),]$Batch = "2"
+tsne_plot_region[tsne_plot_region$pool %in% c("pool34", "pool35"),]$Batch = "snmC-seq2"
+
+tsne_plot_cpg_site$batch = "batch1"
+tsne_plot_cpg_site[tsne_plot_cpg_site$pool %in% c("pool70", "pool71", "pool72", "pool73", "pool74", "pool75"),]$batch = "batch2"
+tsne_plot_cpg_site[tsne_plot_cpg_site$pool %in% c("pool34", "pool35"),]$batch = "snmC-seq2"
+```
+
+```{r}
+reg = ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=batch, shape = batch), size = 2.5, alpha = 0.8,  show.legend = F) +
+  scale_color_manual(values = c( "royalblue3", "green4", "red3")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  theme_bw()
+
+cpg = ggplot(tsne_plot_cpg_site, aes()) + 
+  geom_point(aes(x=x, y=y, color=batch, shape = batch), size = 2.5, alpha = 0.8) +
+  scale_color_manual(values = c("red3", "royalblue3", "green4")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  theme_bw()
+
+reg + cpg
+
+```
+
+```{r}
+ggplot(tsne_plot_region, aes()) + 
+  geom_point(aes(x=x, y=y, color=Batch, shape = Batch), size = 2.5, alpha = 0.8) +
+  scale_color_manual(values = c("royalblue3", "green4", "red3")) +
+  xlab("dim 1") +
+  ylab("dim 2") +
+  ggtitle("D") +
+  theme_bw() +
+  theme(plot.title=element_text(size=30), 
+         legend.text=element_text(size = 17),
+         legend.title=element_text(size = 20))
+```
+

@@ -1,0 +1,45 @@
+
+PROCESS_REAL_DATA_DIR: '/crex/proj/uppstore2017165/nobackup/alva/Epiclomal/process_real_data'
+
+DATA_ID: 'Lnuclei'
+OUTDIR: 'Lnuclei_out_hg38'
+
+DATA_DIR: '/proj/uppstore2017167/FU150/fu150_june_2020_mapping/combined'
+
+CELL_PATTERN: '_pe_se_combined_strandmerged.cov.gz'
+
+cells:
+   [Lnuclei-pool76-S7-A-TAGCTT, Lnuclei-pool76-S7-B-ACTTGA, Lnuclei-pool76-S7-C-GCCAAT, Lnuclei-pool76-S7-H-CAGATC, Lnuclei-pool76-S7-J-GACGAG, Lnuclei-pool76-S7-K-AAGGTC, Lnuclei-pool76-S7-L-TGTAGC, Lnuclei-pool76-S7-N-CTACTG, Lnuclei-pool76-S7-O-CATATG, Lnuclei-pool76-S7-P-GTATAC, Lnuclei-pool76-S7-Q-ACCTTC, Lnuclei-pool77-S8-A-TAGCTT, Lnuclei-pool77-S8-B-ACTTGA, Lnuclei-pool77-S8-C-GCCAAT, Lnuclei-pool77-S8-D-CGATGT, Lnuclei-pool77-S8-H-CAGATC, Lnuclei-pool77-S8-J-GACGAG, Lnuclei-pool77-S8-K-AAGGTC, Lnuclei-pool77-S8-L-TGTAGC, Lnuclei-pool77-S8-M-TTGGCA, Lnuclei-pool77-S8-P-GTATAC, Lnuclei-pool77-S8-Q-ACCTTC, Lnuclei-pool78-S9-A-TAGCTT, Lnuclei-pool78-S9-B-ACTTGA, Lnuclei-pool78-S9-C-GCCAAT, Lnuclei-pool78-S9-F-ATCACG, Lnuclei-pool78-S9-H-CAGATC, Lnuclei-pool78-S9-J-GACGAG, Lnuclei-pool78-S9-K-AAGGTC, Lnuclei-pool78-S9-L-TGTAGC, Lnuclei-pool78-S9-M-TTGGCA, Lnuclei-pool78-S9-N-CTACTG, Lnuclei-pool78-S9-O-CATATG, Lnuclei-pool78-S9-Q-ACCTTC, Lnuclei-pool79-S10-A-TAGCTT, Lnuclei-pool79-S10-B-ACTTGA, Lnuclei-pool79-S10-C-GCCAAT, Lnuclei-pool79-S10-D-CGATGT, Lnuclei-pool79-S10-F-ATCACG, Lnuclei-pool79-S10-H-CAGATC, Lnuclei-pool79-S10-I-CTTGTA, Lnuclei-pool79-S10-J-GACGAG, Lnuclei-pool79-S10-K-AAGGTC, Lnuclei-pool79-S10-L-TGTAGC, Lnuclei-pool79-S10-M-TTGGCA, Lnuclei-pool79-S10-N-CTACTG, Lnuclei-pool79-S10-O-CATATG, Lnuclei-pool79-S10-P-GTATAC, Lnuclei-pool79-S10-Q-ACCTTC, Lnuclei-pool80-S11-A-TAGCTT, Lnuclei-pool80-S11-B-ACTTGA, Lnuclei-pool80-S11-C-GCCAAT, Lnuclei-pool80-S11-D-CGATGT, Lnuclei-pool80-S11-G-TGACCA, Lnuclei-pool80-S11-H-CAGATC, Lnuclei-pool80-S11-I-CTTGTA, Lnuclei-pool80-S11-J-GACGAG, Lnuclei-pool80-S11-K-AAGGTC, Lnuclei-pool80-S11-L-TGTAGC, Lnuclei-pool80-S11-M-TTGGCA, Lnuclei-pool80-S11-N-CTACTG, Lnuclei-pool80-S11-O-CATATG, Lnuclei-pool80-S11-P-GTATAC, Lnuclei-pool80-S11-Q-ACCTTC, Lnuclei-pool81-S12-A-TAGCTT, Lnuclei-pool81-S12-B-ACTTGA, Lnuclei-pool81-S12-C-GCCAAT, Lnuclei-pool81-S12-D-CGATGT, Lnuclei-pool81-S12-H-CAGATC, Lnuclei-pool81-S12-J-GACGAG, Lnuclei-pool81-S12-K-AAGGTC, Lnuclei-pool81-S12-L-TGTAGC, Lnuclei-pool81-S12-M-TTGGCA, Lnuclei-pool81-S12-O-CATATG, Lnuclei-pool81-S12-P-GTATAC, Lnuclei-pool81-S12-Q-ACCTTC, Lnuclei-pool82-S13-A-TAGCTT, Lnuclei-pool82-S13-B-ACTTGA, Lnuclei-pool82-S13-C-GCCAAT, Lnuclei-pool82-S13-D-CGATGT, Lnuclei-pool82-S13-F-ATCACG, Lnuclei-pool82-S13-H-CAGATC, Lnuclei-pool82-S13-I-CTTGTA, Lnuclei-pool82-S13-J-GACGAG, Lnuclei-pool82-S13-K-AAGGTC, Lnuclei-pool82-S13-L-TGTAGC, Lnuclei-pool82-S13-M-TTGGCA, Lnuclei-pool82-S13-O-CATATG, Lnuclei-pool82-S13-P-GTATAC, Lnuclei-pool82-S13-Q-ACCTTC, Lnuclei-pool82-S13-R-CTTCCA, Lnuclei-pool82-S13-S-CGAATG, Lnuclei-pool82-S13-T-AGCATC, Lnuclei-pool82-S13-U-TACCGA, Lnuclei-pool82-S13-V-CAAGGA, Lnuclei-pool82-S13-X-CCGTAA, Lnuclei-pool82-S13-Y-ATAGAC, Lnuclei-pool82-S13-Z-AGGTCT, Lnuclei-pool82-S13-AA-GGAATG, Lnuclei-pool82-S13-BB-GCTTCA, Lnuclei-pool82-S13-CC-TCCTAT, Lnuclei-pool82-S13-DD-TAAGGC, Lnuclei-pool82-S13-EE-AACCTG, Lnuclei-pool82-S13-FF-TTCCCG, Lnuclei-pool82-S13-GG-GATCAT, Lnuclei-pool82-S13-HH-GCACTT, Lnuclei-pool83-S14-B-ACTTGA, Lnuclei-pool83-S14-C-GCCAAT, Lnuclei-pool83-S14-D-CGATGT, Lnuclei-pool83-S14-H-CAGATC, Lnuclei-pool83-S14-I-CTTGTA, Lnuclei-pool83-S14-J-GACGAG, Lnuclei-pool83-S14-K-AAGGTC, Lnuclei-pool83-S14-L-TGTAGC, Lnuclei-pool83-S14-M-TTGGCA, Lnuclei-pool83-S14-N-CTACTG, Lnuclei-pool83-S14-O-CATATG, Lnuclei-pool83-S14-P-GTATAC, Lnuclei-pool83-S14-Q-ACCTTC, Lnuclei-pool83-S14-R-CTTCCA, Lnuclei-pool83-S14-S-CGAATG, Lnuclei-pool83-S14-T-AGCATC, Lnuclei-pool83-S14-U-TACCGA, Lnuclei-pool83-S14-X-CCGTAA, Lnuclei-pool83-S14-Y-ATAGAC, Lnuclei-pool83-S14-Z-AGGTCT, Lnuclei-pool83-S14-AA-GGAATG, Lnuclei-pool83-S14-BB-GCTTCA, Lnuclei-pool83-S14-CC-TCCTAT, Lnuclei-pool83-S14-DD-TAAGGC, Lnuclei-pool83-S14-EE-AACCTG, Lnuclei-pool83-S14-FF-TTCCCG, Lnuclei-pool83-S14-GG-GATCAT, Lnuclei-pool83-S14-HH-GCACTT, Lnuclei-pool84-S15-A-TAGCTT, Lnuclei-pool84-S15-B-ACTTGA, Lnuclei-pool84-S15-C-GCCAAT, Lnuclei-pool84-S15-D-CGATGT, Lnuclei-pool84-S15-G-TGACCA, Lnuclei-pool84-S15-H-CAGATC, Lnuclei-pool84-S15-I-CTTGTA, Lnuclei-pool84-S15-J-GACGAG, Lnuclei-pool84-S15-K-AAGGTC, Lnuclei-pool84-S15-L-TGTAGC, Lnuclei-pool84-S15-M-TTGGCA, Lnuclei-pool84-S15-N-CTACTG, Lnuclei-pool84-S15-O-CATATG, Lnuclei-pool84-S15-P-GTATAC, Lnuclei-pool84-S15-Q-ACCTTC, Lnuclei-pool84-S15-R-CTTCCA, Lnuclei-pool84-S15-S-CGAATG, Lnuclei-pool84-S15-T-AGCATC, Lnuclei-pool84-S15-U-TACCGA, Lnuclei-pool84-S15-V-CAAGGA, Lnuclei-pool84-S15-X-CCGTAA, Lnuclei-pool84-S15-Y-ATAGAC, Lnuclei-pool84-S15-Z-AGGTCT, Lnuclei-pool84-S15-AA-GGAATG, Lnuclei-pool84-S15-BB-GCTTCA, Lnuclei-pool84-S15-CC-TCCTAT, Lnuclei-pool84-S15-DD-TAAGGC, Lnuclei-pool84-S15-EE-AACCTG, Lnuclei-pool84-S15-FF-TTCCCG, Lnuclei-pool84-S15-GG-GATCAT, Lnuclei-pool84-S15-HH-GCACTT, Lnuclei-pool85-S16-A-TAGCTT, Lnuclei-pool85-S16-B-ACTTGA, Lnuclei-pool85-S16-C-GCCAAT, Lnuclei-pool85-S16-D-CGATGT, Lnuclei-pool85-S16-F-ATCACG, Lnuclei-pool85-S16-G-TGACCA, Lnuclei-pool85-S16-H-CAGATC, Lnuclei-pool85-S16-I-CTTGTA, Lnuclei-pool85-S16-J-GACGAG, Lnuclei-pool85-S16-K-AAGGTC, Lnuclei-pool85-S16-L-TGTAGC, Lnuclei-pool85-S16-M-TTGGCA, Lnuclei-pool85-S16-N-CTACTG, Lnuclei-pool85-S16-O-CATATG, Lnuclei-pool85-S16-Q-ACCTTC, Lnuclei-pool86-S17-A-TAGCTT, Lnuclei-pool86-S17-B-ACTTGA, Lnuclei-pool86-S17-C-GCCAAT, Lnuclei-pool86-S17-D-CGATGT, Lnuclei-pool86-S17-I-CTTGTA, Lnuclei-pool86-S17-J-GACGAG, Lnuclei-pool86-S17-K-AAGGTC, Lnuclei-pool86-S17-L-TGTAGC, Lnuclei-pool86-S17-M-TTGGCA, Lnuclei-pool86-S17-O-CATATG, Lnuclei-pool86-S17-P-GTATAC, Lnuclei-pool86-S17-Q-ACCTTC, Lnuclei-pool86-S17-R-CTTCCA, Lnuclei-pool86-S17-S-CGAATG, Lnuclei-pool86-S17-T-AGCATC, Lnuclei-pool86-S17-U-TACCGA, Lnuclei-pool86-S17-V-CAAGGA, Lnuclei-pool86-S17-X-CCGTAA, Lnuclei-pool86-S17-Y-ATAGAC, Lnuclei-pool86-S17-Z-AGGTCT, Lnuclei-pool86-S17-AA-GGAATG, Lnuclei-pool86-S17-BB-GCTTCA, Lnuclei-pool86-S17-CC-TCCTAT, Lnuclei-pool86-S17-DD-TAAGGC, Lnuclei-pool86-S17-EE-AACCTG, Lnuclei-pool86-S17-FF-TTCCCG, Lnuclei-pool86-S17-HH-GCACTT, Lnuclei-pool87-S18-A-TAGCTT, Lnuclei-pool87-S18-B-ACTTGA, Lnuclei-pool87-S18-C-GCCAAT, Lnuclei-pool87-S18-D-CGATGT, Lnuclei-pool87-S18-F-ATCACG, Lnuclei-pool87-S18-H-CAGATC, Lnuclei-pool87-S18-I-CTTGTA, Lnuclei-pool87-S18-J-GACGAG, Lnuclei-pool87-S18-K-AAGGTC, Lnuclei-pool87-S18-L-TGTAGC, Lnuclei-pool87-S18-M-TTGGCA, Lnuclei-pool87-S18-N-CTACTG, Lnuclei-pool87-S18-O-CATATG, Lnuclei-pool87-S18-P-GTATAC, Lnuclei-pool87-S18-R-CTTCCA, Lnuclei-pool87-S18-S-CGAATG, Lnuclei-pool87-S18-T-AGCATC, Lnuclei-pool87-S18-V-CAAGGA, Lnuclei-pool87-S18-X-CCGTAA, Lnuclei-pool87-S18-Y-ATAGAC, Lnuclei-pool87-S18-AA-GGAATG, Lnuclei-pool87-S18-BB-GCTTCA, Lnuclei-pool87-S18-DD-TAAGGC, Lnuclei-pool87-S18-EE-AACCTG, Lnuclei-pool87-S18-FF-TTCCCG, Lnuclei-pool87-S18-GG-GATCAT, Lnuclei-pool87-S18-HH-GCACTT, Lnuclei-pool51-S1-A, Lnuclei-pool51-S1-B, Lnuclei-pool51-S1-C, Lnuclei-pool51-S1-D, Lnuclei-pool52-S1-A, Lnuclei-pool52-S1-B, Lnuclei-pool52-S1-C, Lnuclei-pool53-S1-A, Lnuclei-pool53-S1-B, Lnuclei-pool53-S1-C, Lnuclei-pool53-S1-D, Lnuclei-pool54-S1-A, Lnuclei-pool54-S1-B, Lnuclei-pool54-S1-C, Lnuclei-pool54-S1-D, Lnuclei-pool55-S1-A, Lnuclei-pool55-S1-B, Lnuclei-pool55-S1-C, Lnuclei-pool55-S1-D, Lnuclei-pool56-S1-A, Lnuclei-pool56-S1-B, Lnuclei-pool56-S1-C, Lnuclei-pool56-S1-D, Lnuclei-pool57-S1-A, Lnuclei-pool57-S1-B, Lnuclei-pool57-S1-C, Lnuclei-pool57-S1-D, Lnuclei-pool58-S1-A, Lnuclei-pool58-S1-B, Lnuclei-pool58-S1-C, Lnuclei-pool58-S1-D, Lnuclei-pool59-S1-A, Lnuclei-pool59-S1-B, Lnuclei-pool59-S1-C, Lnuclei-pool59-S1-D, Lnuclei-pool60-S1-A, Lnuclei-pool60-S1-B, Lnuclei-pool60-S1-C, Lnuclei-pool60-S1-D]
+   
+REGION_FILE: '/crex/proj/uppstore2017165/nobackup/alva/scWGBS/hg38.cpg.positions.txt'
+TRUE_FILE: NULL 
+
+CPG_COORDS:
+  NAME_REGIONS: 'CpG_islands'
+  GENOME_LIBRARY: 'BSgenome.Hsapiens.UCSC.hg38'
+  TYPE_OF_C: 'CpG'
+
+CELL_BASED_METH:
+  INCLUDE_CHRY: 1
+  DATA_TYPE: 'bismark'
+  GENOME: 'human'
+
+STATS_METHYLATION:
+  NUM_CELLS_CUTOFF: 0
+  MISS_PROP_CUTOFF: 0.95
+  NLOCI_CUTOFF: 0.0
+  ALL_CUTOFFS: 
+    - "0_0.95_10000"
+  FILTER_REGIONS_SAME_METH: Null
+  PLOT_HEATMAP_FILTERED: 1
+  PLOT_HEATMAP_UNFILTERED: 1
+
+FILTER_REGIONS:
+  FILTER: True
+  COEF_THRESHOLD: 0.95
+  MEAN_DIFF_THRESHOLD: 0
+  N_TO_KEEP: 1000
+
+READY_EPICLOMAL:
+  FILTER_CPG_NO_DATA: 0
+  LUODIAMOND: 0

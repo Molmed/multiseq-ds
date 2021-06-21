@@ -1,0 +1,29 @@
+OUTPUT_DIR: '/crex/proj/uppstore2017165/nobackup/alva/scWGBS/Lnuclei_out_hg38/cluster'
+CUTOFFS: '0_0.95_10000'
+
+METH_FILE: '/crex/proj/uppstore2017165/nobackup/alva/scWGBS/Lnuclei_out_hg38/epiclomal_input/0_0.95_10000/input_Epiclomal_Lnuclei.tsv.gz'
+REGION_FILE: '/crex/proj/uppstore2017165/nobackup/alva/scWGBS/Lnuclei_out_hg38/epiclomal_input/0_0.95_10000/regionIDs_input_Epiclomal_Lnuclei.tsv.gz'
+TRUE_PREVALENCES: 'None'
+TRUE_FILE: False 
+
+NUM_EPI_ITERS: 500
+
+PARAMS:
+  NPM:
+    index: 'ch'
+    max_k: 10
+    impute: 0
+    use_cache: 1
+  EPICLOMAL:
+    K: 10
+    slsbulk_iterations: 10
+    mu_has_k: True
+    convergence_tolerange: 1e-4
+    max_num_iters: 1000
+    Bishop_model_selection: False
+    check_uncertainty: True
+    config_file: '/crex/proj/uppstore2017165/nobackup/alva/scWGBS/config1.yaml'
+
+SOFTWARE:
+  hclust_software: '/crex/proj/uppstore2017165/nobackup/alva/Epiclomal/scripts/hclust.R'
+  eval_software: '/crex/proj/uppstore2017165/nobackup/alva/Epiclomal/scripts/eval_epiclomal.R'

@@ -1,0 +1,52 @@
+
+configfile: "config_process_scATAC.yaml"
+
+rule all:
+    input:
+        config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_combined_peaks_seurat.rds",
+        config["OUT_DIR"] + "/" + config["RUN_ID"] + "_merge_seurat.rds",
+        config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_integrated_seurat.rds", 
+
+if config["MERGE"]:
+    rule merge_seurat:
+        input:
+            expand(config["OUT_DIR"] + "/{sample}_seurat_preproc.rds", sample = config["SAMPLES"])
+        output:
+            config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_seurat.rds"
+        shell:
+            """
+            module load bioinfo-tools
+            module load R/4.0.0
+            module load R_packages/4.0.0
+
+            Rscript --vanilla {config[SCRIPTS]}/atac_merge_seurat.R {output} {input}
+            """
+if config["MERGE_COM_PEAKS"]:
+    rule merge_combined_peaks_seurat:
+        input:
+            expand(config["OUT_DIR"] + "/{sample}_atac_count", sample = config["SAMPLES"])
+        output:
+            config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_combined_peaks_seurat.rds"
+        shell:
+            """
+            module load bioinfo-tools
+            module load R/4.0.0
+            module load R_packages/4.0.0
+
+            Rscript --vanilla {config[SCRIPTS]}/atac_merge_combined_peaks_seurat.R {output} {input}
+            """
+if config["INTEGRATE"] and config["MERGE_COM_PEAKS"]:
+    rule integrate_seurat:
+         input:
+             config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_merge_combined_peaks_seurat.rds"
+         output:
+             config["OUT_DIR"] + "/" + config["RUN_ID"]  + "_integrated_seurat.rds"
+         shell:
+             """
+             module load bioinfo-tools
+             module load R/4.0.0
+             module load R_packages/4.0.0
+
+             Rscript --vanilla {config[SCRIPTS]}/atac_integration_seurat.R {output} {input}
+             """
+
