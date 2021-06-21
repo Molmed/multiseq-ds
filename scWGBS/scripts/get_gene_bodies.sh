@@ -1,3 +1,4 @@
+#!/bin/bash
 
 #download and format gene bodies file 
 
