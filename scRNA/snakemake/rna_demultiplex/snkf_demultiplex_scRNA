@@ -3,79 +3,75 @@ configfile: "config_demultiplex_scRNA.yaml"
 
 rule all:
     input:
-        expand(config["OUT_DIR"] + "/{sample}_demultiplex.rds", sample = config["SAMPLES"]), 
-        config["OUT_DIR"] + "/summary_rna.csv", 
-        config["OUT_DIR"] + "/summary_hto.csv"
+        expand(config["OUT_DIR"] + "/{sample}/{sample}_demultiplex.rds", sample = config["SAMPLES"]),  
+        config["OUT_DIR"] + "/cellranger_summary.csv"
 
-rule run_count_rna:
+rule make_lib_csv:
+    output: 
+        config["OUT_DIR"] + "/{sample}/{sample}_lib_info.csv"
+    run:
+        import pandas as pd 
+        import csv     
+      
+        sample_index = config["SAMPLES"].index(wildcards.sample) 
+        
+        lib = pd.DataFrame({'fastqs': [config["GEX_FASTQ_FOLDERS"][sample_index], config["BC_FASTQ_FOLDERS"][sample_index]], 
+                            'sample': [wildcards.sample + "-Sample", wildcards.sample + "-Barcodes"],
+                            'library_type': ["Gene Expression", config["BC_LIB_TYPE"]]}, 
+                           index=[0, 1])
+        
+        lib.to_csv(output[0], index=False) 
+
+rule run_count_rna_hto:   
+    input:
+        ref_genome = config["REF_GENOME"],
+        lib_info = config["OUT_DIR"] + "/{sample}/{sample}_lib_info.csv",
+        bc_info = config["BARCODE_INFO"]
     output:
-        directory(config["OUT_DIR"] + "/{sample}_rna")
+        directory(config["OUT_DIR"] + "/{sample}/{sample}_count")
     params:
-       sample="{sample}_rna"
+        sample="{sample}_count"
     shell:
         """
+        module load bioinfo-tools
+        module load cellranger/5.0.1
+
         cellranger count \
         --id={params.sample} \
-        --fastqs=config["FASTQ_FOLDER"] \
-        --transcriptome=config["REF_GENOME"] \
-        --expect-cells=config["EXP_CELLS"] 
-
-        mv {params.sample} config["OUT_DIR"]
-        """
-rule run_count_hto:
-    output:
-        directory(config["OUT_DIR"] + "/{sample}_hto")
-    params:
-        sample="{sample}_hto"
-    shell:
-        """
-        cellranger count \
-        --id={params.sample} \
-        --libraries=config["BARCODE_LIB"] \
-        --feature-ref=config["BARCODES"] \
-        --transcriptome=config["REF_GENOME"] \
-        --expect-cells=config["EXP_CELLS"]
-
-        mv {params.sample} config["OUT_DIR"] 
+        --libraries={input.lib_info} \
+        --feature-ref={input.bc_info} \
+        --transcriptome={input.ref_genome}
+         
+        mv {params.sample} {config[OUT_DIR]}/{wildcards.sample}
         """
 
 rule demultiplex:
     input:
-        matrix_rna=config["OUT_DIR"] + "/{sample}_rna",
-        matrix_hto=config["OUT_DIR"] + "/{sample}_hto"
+        matrix=config["OUT_DIR"] + "/{sample}/{sample}_count"
     output:
-        config["OUT_DIR"] + "/{sample}_demultiplex.rds"
+        config["OUT_DIR"] + "/{sample}/{sample}_demultiplex.rds"
     shell:
         """
-        module load R/4.0.0
-        module load R_packages/4.0.0
+        module load R/4.0.4
+        module load R_packages/4.0.4
 
         Rscript --vanilla {config[SCRIPTS]}/rna_demultiplex_seurat.R \
-        {input.matrix_rna} \
-        {input.matrix_hto} \
+        {input.matrix} \
         {output}
-        """ 
+        """
 
-rule summary:
-    input:
-        rna = expand(config["OUT_DIR"] + "/{sample}_rna", sample = config["SAMPLES"]), 
-        hto = expand(config["OUT_DIR"] + "/{sample}_hto", sample = config["SAMPLES"])
-    output:
-        config["OUT_DIR"] + "/summary_rna.csv",
-        config["OUT_DIR"] + "/summary_hto.csv"
-    run:
+#rule that creates a csv file with cellranger summary statistics from all samples 
+rule summary: 
+     input: 
+         expand(config["OUT_DIR"] + "/{sample}/{sample}_count", sample = config["SAMPLES"])
+     output: 
+         config["OUT_DIR"] + "/cellranger_summary.csv"  
+     run: 
         import pandas as pd
         import csv 
         
-        print(input) 
-        combined_rna = pd.concat([pd.read_csv(f  + "/outs/metrics_summary.csv") for f in input.rna]) 
-        combined_rna["id"] = samples
-        combined_rna.to_csv(output[0], index=False) 
-
-        print(input[1])
-	combined_hto = pd.concat([pd.read_csv(f + "/outs/metrics_summary.csv") for f in input.hto])
-        combined_hto["id"] = samples
-        combined_hto.to_csv(output[1], index=False)
-
-
+        combined = pd.concat([pd.read_csv(f  + "/outs/metrics_summary.csv") for f in input])
+        combined["id"] = config["SAMPLES"] 
+                  
+        combined.to_csv(output[0], index=False)
 

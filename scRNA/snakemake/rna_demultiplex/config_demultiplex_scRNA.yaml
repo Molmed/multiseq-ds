@@ -2,27 +2,33 @@
 
 #samples 
 SAMPLES:
-    ["pbmc_1k_protein"]
+    ["FU180-MULTI-seq"]
 
 #path to output dir 
 OUT_DIR: "out"
 
 #path to refrence genome 
-REF_GENOME: "/crex/data/Chromium/cellranger-data/2020-A/refdata-gex-GRCh38-2020-A"
+REF_GENOME: "/crex/proj/uppstore2017165/nobackup/alva/REH_MULTI-seq/EquCab3_and_GRCh38"
 
-#path to folder with fastq files 
-FASTQ_FOLDER: "/data/pbmc_1k_protein_v3_fastqs/pbmc_1k_protein_v3_gex_fastqs"
+#path to folder with fastq files (in this case path to folder where the SI-GA-B4 folders are)
+#same order as SAMPLES
+GEX_FASTQ_FOLDERS: 
+    ["/crex/proj/uppstore2017165/FU180/210428_A00605_0213_AH72YVDRXY"]
 
 #path to folder with scripts
-SCRIPTS: "/scripts"
+SCRIPTS: "/crex/proj/uppstore2017165/nobackup/alva/REH_MULTI-seq/scripts"
 
-#path to libary csv file for barcode library 
-#https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis)
-BARCODE_LIB: "/data/pbmc_1k_protein_v3_library.csv"
+#path to folders with barcode lib
+#same order as SAMPELS 
+BC_FASTQ_FOLDERS: 
+    ["/crex/proj/uppstore2017165/FU180/210428_A00605_0213_AH72YVDRXY/Sample_FU180-MULTI-seq-Barcodes"]
+
+#library type for barcode library (MULTI-seq lib = Custom) 
+BC_LIB_TYPE: "Custom"
 
 #path to csv file with barcode info 
 #https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/feature-bc-analysis
-BARCODES: "/data/pbmc_1k_protein_v3_feature_ref.csv"
+BARCODE_INFO: "/crex/proj/uppstore2017165/nobackup/alva/REH_MULTI-seq/out/bc_info.csv"
 
 #expected number of cells
-EXP_CELLS: 1000
+EXP_CELL: 1000

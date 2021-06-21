@@ -1,0 +1,63 @@
+
+#genome names 
+GENOMES = ["EquCab3", "GRCh38"]
+
+#path to folder with fasta and gtf files 
+FOLDER = "/crex/proj/uppstore2017165/nobackup/alva/REH_MULTI-seq/data" 
+
+#name of output folder (needs to have format Genome1_and_Genome2) 
+OUTPUT_REF = "EquCab3_and_GRCh38"
+
+rule all:
+    input:
+        OUTPUT_REF
+
+rule run_mkgtf:
+    input:
+        FOLDER + "/{sample}.gtf"
+    output:
+        FOLDER + "/{sample}_filtered.gtf"
+    shell:
+        """
+        module load bioinfo-tools
+        module load cellranger/4.0.0
+        
+        cellranger mkgtf {input} {output} \
+                   --attribute=gene_biotype:protein_coding \
+                   --attribute=gene_biotype:lincRNA \
+                   --attribute=gene_biotype:antisense \
+                   --attribute=gene_biotype:IG_LV_gene \
+                   --attribute=gene_biotype:IG_V_gene \
+                   --attribute=gene_biotype:IG_V_pseudogene \
+                   --attribute=gene_biotype:IG_D_gene \
+                   --attribute=gene_biotype:IG_J_gene \
+                   --attribute=gene_biotype:IG_J_pseudogene \
+                   --attribute=gene_biotype:IG_C_gene \
+                   --attribute=gene_biotype:IG_C_pseudogene \
+                   --attribute=gene_biotype:TR_V_gene \
+                   --attribute=gene_biotype:TR_V_pseudogene \
+                   --attribute=gene_biotype:TR_D_gene \
+                   --attribute=gene_biotype:TR_J_gene \
+                   --attribute=gene_biotype:TR_J_pseudogene \
+                   --attribute=gene_biotype:TR_C_gene 
+        """
+        
+rule run_mkref:
+    input:
+        gtf = expand(FOLDER + "/{sample}_filtered.gtf", sample = GENOMES),
+        fastqs = expand(FOLDER + "/{sample}.fa",sample = GENOMES)
+    output:
+        directory(OUTPUT_REF)
+    params:
+        genomes = GENOMES 
+    shell:
+        """
+        module load bioinfo-tools
+        module load cellranger/4.0.0
+
+        cellranger mkref \
+         --genome={params.genomes[0]} --fasta={input.fastqs[0]} --genes={input.gtf[0]} \
+         --genome={params.genomes[1]} --fasta={input.fastqs[1]} --genes={input.gtf[1]} \
+         --memgb=95 \
+         --nthreads=15
+        """
